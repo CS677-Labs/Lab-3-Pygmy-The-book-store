@@ -53,5 +53,7 @@ def appendOrderDetailsToDb(itemNum, orderStatus) :
                 cursor.execute(insert_sql, columnValues)
                 dbConnection.commit()
                 logging.info("Inserted orderDate - {}, ItemNum - {}, orderStatus - {} to the DataBase".format(orderDate, itemNum, orderStatus))
+                return { "OrderId" : cursor.lastrowid, "Date" : orderDate, "ID" : itemNum, "Order status" : orderStatus} 
             except Error as e :
                 logging.error("Unable to insert data to the Database. Error - " + str(e))
+                return None

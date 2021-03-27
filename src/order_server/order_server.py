@@ -1,5 +1,5 @@
 import flask
-from flask import request, jsonify
+from flask import request, jsonify, make_response
 import logging
 import os
 from orders_db import appendOrderDetailsToDb
@@ -14,32 +14,36 @@ def lookupItem(itemNum) :
     logging.info("Looking up {} on catalog server".format(itemNum))
     return True
 
-@orderServer.route('/', methods=['POST'])
-def makeOrder():
-    status = "Success"
-    # Check if an itemNum was provided as part of the URL.
-    # If itemNum is provided, try to place the order.
-    # If no itemNum is provided, return error.
-    if 'itemNum' in request.args:
-        itemNum = int(request.args['itemNum'])
-
-        # Do a lookup for that itemNum
-        lookupResult = lookupItem(itemNum)
-
-        if lookupResult is True :
-            appendOrderDetailsToDb(itemNum, "Success")
+@orderServer.route('/buy/<id>', methods=['POST'])
+def placeOrder(id):
+    id = int(id)
+    # Do a lookup for that id
+    lookupResult = lookupItem(id)
+    dataToReturn = None
+    if lookupResult is True :
+        dataToReturn = appendOrderDetailsToDb(id, "Success")
+        if dataToReturn is not None :
             updateCatalogServer()
-            status = "Success"
-        else :
-            appendOrderDetailsToDb(itemNum, "Failed")
-            status = "Failed"
-            
-    else:
-        logging.error("itemNum is not part of the request.")
-        status = "Error"
+        
+    else :
+        dataToReturn = appendOrderDetailsToDb(id, "Failed")
 
-    returnJson = { "Status" : status }
+    response = None
+    if dataToReturn is None :
+        response = make_response (
+            jsonify ( 
+                {"Error" : "Failed to update details of this order. Please try again"} 
+            ),
+            500,
+        )
+    else :
+        response = make_response (
+            jsonify ( 
+                {"Order details" : dataToReturn} 
+            ),
+            200,
+        )
 
-    return returnJson
+    return response
 
-orderServer.run()
+orderServer.run(port=5001,debug=True)
