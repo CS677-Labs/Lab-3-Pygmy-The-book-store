@@ -9,13 +9,16 @@ logging.basicConfig(filename='Orders.log', level=logging.DEBUG)
 orderServer = flask.Flask(__name__)
 catalogServerURL = "http://127.0.0.1:5000/"
 
-@orderServer.route('/buy/<id>', methods=['POST'])
+@orderServer.route('/books/<id>', methods=['POST'])
 def placeOrder(id):
     id = int(id)
     
     # Do a lookup for this id
     logging.info("Looking up {} on catalog server".format(id))
-    response = requests.get(url=catalogServerURL+"books/"+str(id))
+    try:
+        response = requests.get(url=catalogServerURL+"books/"+str(id))
+    except requests.exceptions.RequestException:
+        return make_response (jsonify({"Error" : f"Ughh! Catalog server seems to be down."}),  501)
     lookupResult = True
     
     if response.status_code == 404 :
