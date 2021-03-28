@@ -1,45 +1,52 @@
 import flask
-from flask import request, jsonify
+import requests
+from flask import request, jsonify, Response, make_response
 import logging
 import os
 from orders_db import appendOrderDetailsToDb
 
 logging.basicConfig(filename='Orders.log', level=logging.DEBUG)
 orderServer = flask.Flask(__name__)
+catalogServerURL = "http://127.0.0.1:5000/"
 
-def updateCatalogServer() :
+@orderServer.route('/buy/<id>', methods=['POST'])
+def placeOrder(id):
+    id = int(id)
+    
+    # Do a lookup for this id
+    logging.info("Looking up {} on catalog server".format(id))
+    response = requests.get(url=catalogServerURL+"books/"+str(id))
+    lookupResult = True
+    
+    if response.status_code == 404 :
+        return make_response (jsonify({"Error" : f"Book with ID {id} not found"}),  404)
+
+    else :
+        responseJson = response.json()
+        if responseJson["count"] == 0 :
+            return make_response(jsonify({"Error" : f"No stock for Book with ID {id}"}), 400)
+    
+    # Reduce count for this id
     logging.info("Updating catalog server now")
+    response = requests.patch(url=catalogServerURL+"books/"+str(id), json={'count' : {'_operation' : 'decrement', 'value' : 1}})
+    if response.status_code == 400 :
+        return make_response(jsonify({"Error" : f"No stock for Book with ID {id}"}), 400)
+    else :
+        if response.status_code != 200 :
+            return response
 
-def lookupItem(itemNum) :
-    logging.info("Looking up {} on catalog server".format(itemNum))
-    return True
+    dataToReturn = appendOrderDetailsToDb(id, "Success")
+    response = None
+    if dataToReturn is None :
+        response = make_response (
+            jsonify ( 
+                {"Error" : "Failed to update details of this order. Please try again"} 
+            ),
+            500,
+        )
+    else :
+        response = make_response (jsonify(dataToReturn),200)
 
-@orderServer.route('/', methods=['POST'])
-def makeOrder():
-    status = "Success"
-    # Check if an itemNum was provided as part of the URL.
-    # If itemNum is provided, try to place the order.
-    # If no itemNum is provided, return error.
-    if 'itemNum' in request.args:
-        itemNum = int(request.args['itemNum'])
+    return response
 
-        # Do a lookup for that itemNum
-        lookupResult = lookupItem(itemNum)
-
-        if lookupResult is True :
-            appendOrderDetailsToDb(itemNum, "Success")
-            updateCatalogServer()
-            status = "Success"
-        else :
-            appendOrderDetailsToDb(itemNum, "Failed")
-            status = "Failed"
-            
-    else:
-        logging.error("itemNum is not part of the request.")
-        status = "Error"
-
-    returnJson = { "Status" : status }
-
-    return returnJson
-
-orderServer.run()
+orderServer.run(port=5001,debug=True)
