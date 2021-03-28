@@ -1,33 +1,41 @@
 import flask
-from flask import request, jsonify, make_response
+import requests
+from flask import request, jsonify, Response, make_response
 import logging
 import os
 from orders_db import appendOrderDetailsToDb
 
 logging.basicConfig(filename='Orders.log', level=logging.DEBUG)
 orderServer = flask.Flask(__name__)
-
-def updateCatalogServer() :
-    logging.info("Updating catalog server now")
-
-def lookupItem(itemNum) :
-    logging.info("Looking up {} on catalog server".format(itemNum))
-    return True
+catalogServerURL = "http://127.0.0.1:5000/"
 
 @orderServer.route('/buy/<id>', methods=['POST'])
 def placeOrder(id):
     id = int(id)
-    # Do a lookup for that id
-    lookupResult = lookupItem(id)
-    dataToReturn = None
-    if lookupResult is True :
-        dataToReturn = appendOrderDetailsToDb(id, "Success")
-        if dataToReturn is not None :
-            updateCatalogServer()
-        
-    else :
-        dataToReturn = appendOrderDetailsToDb(id, "Failed")
+    
+    # Do a lookup for this id
+    logging.info("Looking up {} on catalog server".format(id))
+    response = requests.get(url=catalogServerURL+"books/"+str(id))
+    lookupResult = True
+    
+    if response.status_code == 404 :
+        return make_response (jsonify({"Error" : f"Book with ID {id} not found"}),  404)
 
+    else :
+        responseJson = response.json()
+        if responseJson["count"] == 0 :
+            return make_response(jsonify({"Error" : f"No stock for Book with ID {id}"}), 400)
+    
+    # Reduce count for this id
+    logging.info("Updating catalog server now")
+    response = requests.patch(url=catalogServerURL+"books/"+str(id), json={'count' : {'_operation' : 'decrement', 'value' : 1}})
+    if response.status_code == 400 :
+        return make_response(jsonify({"Error" : f"No stock for Book with ID {id}"}), 400)
+    else :
+        if response.status_code != 200 :
+            return response
+
+    dataToReturn = appendOrderDetailsToDb(id, "Success")
     response = None
     if dataToReturn is None :
         response = make_response (
@@ -37,12 +45,7 @@ def placeOrder(id):
             500,
         )
     else :
-        response = make_response (
-            jsonify ( 
-                {"Order details" : dataToReturn} 
-            ),
-            200,
-        )
+        response = make_response (jsonify(dataToReturn),200)
 
     return response
 
