@@ -9,11 +9,9 @@ book_schema = BookSchema()
 books_schema = BookSchema(many=True)
 
 
-# TODO error handling: catch more specific exceptions?
 # Endpoint to create a new book item
 @app.route("/books", methods=["POST"])
 def add_book():
-    # fixme Add validation here?
     new_book = Book(request.json['title'], request.json['topic'], request.json['count']['value'])
     try:
         db.session.add(new_book)
