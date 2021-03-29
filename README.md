@@ -4,10 +4,10 @@ World's smallest book store with a two-tier web design
 ## Usage
 ### Running the servers on localhost
 ```
-virtualelv .venv
+pip install virtualenv
+virtualenv .venv
 ```
 #### Catalog server
-Brinda updates this with a requirements.txt file
 ```
 #For linux based
 source .venv/bin/activate
