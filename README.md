@@ -1,6 +1,14 @@
 # Lab-2-Pygmy-The-book-store
 World's smallest book store with a two-tier web design
 
+## Run testcases for Milestone 1
+```
+cd Lab-2-Pygmy-The-book-store
+chmod 777 
+chmod 777 test/Milestone_1_Testcases.sh
+bash test/Milestone_1_Testcases.sh
+```
+
 ## Usage
 ### Running the servers on localhost
 ```
