@@ -1,5 +1,6 @@
 # Lab-2-Pygmy-The-book-store
 World's smallest book store with a two-tier web design
+**Team members**: Vignesh Radhakrishna (32577580, vradhakrishn@umass.edu), Adarsh Kolya (33018261, akolya@umass.edu), Brinda Murulidhara (32578418, bmurulidhara@umass.edu)
 
 ## Run testcases for Milestone 1
 ```

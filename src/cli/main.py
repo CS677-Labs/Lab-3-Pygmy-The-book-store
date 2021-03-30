@@ -12,7 +12,7 @@ def lookup(item_number: int):
     try:
         book = get_book(item_number)
     except Exception as e:
-        click.echo(str(e), err=True)
+        click.echo(str(e))
         return
     click.echo(book)
 
@@ -23,7 +23,7 @@ def search(topic: str):
     try:
         books = get_books_by_topic(topic)
     except Exception as e:
-        click.echo(str(e), err=True)
+        click.echo(str(e))
         return
     click.echo(books)
     
@@ -35,7 +35,7 @@ def buy(item_number: int):
     try:
         book = buy_book(item_number)
     except Exception as e:
-        click.echo(str(e), err=True)
+        click.echo(str(e))
         return
     click.echo("Hooray! You bought the book.")
     click.echo(book)
