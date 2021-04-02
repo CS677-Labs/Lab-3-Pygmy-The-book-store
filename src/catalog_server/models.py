@@ -17,14 +17,16 @@ class Book(db.Model):
     title = db.Column(db.VARCHAR)
     topic = db.Column(db.VARCHAR)
     count = db.Column(db.Integer)
+    cost = db.Column(db.Float)
     __table_args__ = (
         db.CheckConstraint('count >= 0'),
         {})
 
-    def __init__(self, title, topic, count):
+    def __init__(self, title, topic, count, cost):
         self.title = title
         self.topic = topic
         self.count = count
+        self.cost = cost
 
 
 class BookSchema(ma.Schema):
@@ -38,6 +40,6 @@ if not os.path.exists(os.path.join(basedir, 'data', 'catalog.sqlite')):
     with open(os.path.join(basedir, 'data', 'book_details.json')) as f:
         data = json.load(f)
     for book in data:
-        new_book = Book(book['title'], book['topic'], book['count'])
+        new_book = Book(book['title'], book['topic'], book['count'], book['cost'])
         db.session.add(new_book)
     db.session.commit()

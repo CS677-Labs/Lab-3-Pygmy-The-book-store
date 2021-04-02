@@ -7,9 +7,9 @@ import os
 logging.basicConfig(filename='Orders.log', level=logging.DEBUG)
 
 def create_connection():
-    db_file = "data/orders.db"
-    db_dir = os.path.dirname(db_file)
-    if not os.path.exists(db_dir) :
+    db_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "data")
+    db_file = os.path.join(db_dir, "orders.db")
+    if not os.path.exists(db_dir):
         os.makedirs(db_dir)
 
     conn = None

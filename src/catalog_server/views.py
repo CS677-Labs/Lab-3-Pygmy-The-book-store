@@ -12,7 +12,7 @@ books_schema = BookSchema(many=True)
 # Endpoint to create a new book item
 @app.route("/books", methods=["POST"])
 def add_book():
-    new_book = Book(request.json['title'], request.json['topic'], request.json['count']['value'])
+    new_book = Book(request.json['title'], request.json['topic'], request.json['count']['value'], request.json['cost'])
     try:
         db.session.add(new_book)
         db.session.commit()
@@ -24,18 +24,17 @@ def add_book():
 # Endpoint to return books on a given topic
 @app.route("/books", methods=["GET"])
 def get_books():
-    filtered_books = Book.query.filter_by(topic=request.args.get('topic'))
-    result = books_schema.dump(filtered_books)
-    return jsonify(result)
+    filtered_books = Book.query.with_entities(Book.id, Book.title).filter_by(topic=request.args.get('topic')).all()
+    return jsonify([(dict(row)) for row in filtered_books]) # fixme using dump and jsonify directly results in an error
 
 
 # Endpoint to get details of a book given the id
 @app.route("/books/<id>", methods=["GET"])
 def book_detail(id):
-    book = Book.query.get(id)
+    book = Book.query.with_entities(Book.cost, Book.count).filter_by(id=id).first()
     if not book:
         return Response(json.dumps({"message": f"Book with id {id} not found."}), status=404, mimetype='application/json')
-    return book_schema.jsonify(book)
+    return jsonify(dict(book)) # fixme using dump and jsonify directly results in an error
 
 
 # Endpoint to update details of a book
