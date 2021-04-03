@@ -44,6 +44,7 @@ def book_update(id):
     current_book_count = book.count
     book.topic = request.json.get('topic') or book.topic
     book.title = request.json.get('title') or book.title
+    book.cost = request.json.get('cost') if 'cost' in request.json else book.cost
 
     if request.json['count'].get('_operation'):
         if request.json['count'].get('_operation') == 'increment':
