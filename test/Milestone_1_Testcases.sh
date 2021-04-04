@@ -113,7 +113,7 @@ fi
 echo "---------------------------------------------------------------"
 echo "---------------------------------------------------------------"
 echo "Test Case 6."
-countBefore=$(echo $tmpoutput | sed -n 's/^.*count.:.//p' | awk -F[,] '{print $1}')
+countBefore=$(echo $tmpoutput | sed -n 's/^.*count.:.//p' | awk -F[,}] '{print $1}')
 echo "Current count of the - $countBefore"
 echo "Attempting to buy this book. Expecting it to succeed."
 tmpoutput=$(python3 src/cli/main.py buy 2)
@@ -131,7 +131,7 @@ if [[ $tmpoutput == *"Failed"* ]] ; then
 else
     echo "Result: Success"
 fi
-countAfter=$(echo $tmpoutput | sed -n 's/^.*count.:.//p' | awk -F[,] '{print $1}')
+countAfter=$(echo $tmpoutput | sed -n 's/^.*count.:.//p' | awk -F[,}] '{print $1}')
 echo "Count after buy - $countAfter"
 
 diff=$(($countBefore - $countAfter))
