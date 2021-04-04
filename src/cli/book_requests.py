@@ -32,7 +32,7 @@ def buy_book(item_number: int) -> Dict:
         response = requests.post(f"http://localhost:5002/books/{item_number}")
     except requests.exceptions.RequestException as e:
         raise Exception(f"Frontend server seems to be down. Failed to buy the book with item number {item_number}.")
-    # Todo: Add comments for execption handling.
+    # Todo: Add comments for exception handling.
     if response.status_code != 200:
         raise Exception(str(response.text))
     return response.json()
