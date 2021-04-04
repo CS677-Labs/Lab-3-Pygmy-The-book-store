@@ -1,12 +1,15 @@
 import requests
 from typing import Dict, List
 
+FRONTEND_URL= ""
+
+
 def get_book(item_number: int) -> Dict:
     """
     Fetches the book corresponding to item number item_number from the front end server.
     """
     try:
-        response = requests.get(f"http://localhost:5002/books/{item_number}")
+        response = requests.get(f"{FRONTEND_URL}/books/{item_number}")
         #r.raise_for_status()
     except requests.exceptions.RequestException as e:
         raise Exception("Frontend server seems to be down. Failed to fetch the book.")
@@ -18,7 +21,7 @@ def get_book(item_number: int) -> Dict:
 def get_books_by_topic(topic: str) -> List[Dict]:
     payload = {"topic": topic}
     try:
-        response = requests.get(f"http://localhost:5002/books", params=payload)
+        response = requests.get(f"{FRONTEND_URL}/books", params=payload)
     except requests.exceptions.RequestException as e:
         raise Exception(f"Frontend server seems to be down. Failed to fetch the books for topic {topic}.")
     # Todo: Add comments for exception handling.
@@ -29,7 +32,7 @@ def get_books_by_topic(topic: str) -> List[Dict]:
 
 def buy_book(item_number: int) -> Dict:
     try:
-        response = requests.post(f"http://localhost:5002/books/{item_number}")
+        response = requests.post(f"{FRONTEND_URL}/books/{item_number}")
     except requests.exceptions.RequestException as e:
         raise Exception(f"Frontend server seems to be down. Failed to buy the book with item number {item_number}.")
     # Todo: Add comments for execption handling.

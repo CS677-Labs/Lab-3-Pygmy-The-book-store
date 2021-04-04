@@ -1,65 +1,95 @@
 #/bin/bash
 set -e
+mkdir -p classfiles
 function finish {
   echo "Cleanup"
-  kill $pid_catalog $pid_order $pid_frontend >/dev/null 2>&1 || echo "Failed killing some or all the servers."
+  for i in "${local_pids[@]}"
+  do
+   kill $i || echo "Failed to kill process $i. It is probably already killed."
+   # or do whatever with individual element of the array
+  done
+
+#  # For remote cleanup
+  while IFS= read -r line
+  do
+    newline=(${line//=/ })
+    id=${newline[0]}
+    network=(${newline[1]//,/ })
+    url=(${network[0]//:/ })
+    ip="${url[0]}:${url[1]}"
+    fullurl=$ip
+    ip=$(echo "$fullurl" |sed 's/https\?:\/\///')
+    ssh -n ec2-user@"$ip" "kill ${pids[id]}" || echo "Failed to kill process $i."
+  done < "network-config.properties"
+  rm -rf build/* >/dev/null 2>&1
 }
 trap finish EXIT
 trap finish RETURN
-echo "---------------------------------------------------------------"
-# Setting up
-echo "Setting up the test environment..."
-pip install virtualenv 2>/dev/null >/dev/null
-virtualenv .venv 2>/dev/null >/dev/null
-
-pip install -r src/catalog_server/requirements.txt 2>/dev/null >/dev/null
-
-# Run catalog server and validate if it's running successfully.
-echo "  Starting catalog server..."
-export FLASK_APP=src/catalog_server/views.py
-python3 -m flask run --port 5000 2>/dev/null >/dev/null &
-pid_catalog=$!
-sleep 3
-if ! (ps | grep "python" | grep "$pid_catalog" | grep -v grep >/dev/null 2>&1)
-then
-	echo "Failed to start the catalog server" && return 1
-fi
 
 
-# Run order server and validate if it's running successfully.
-echo "  Starting order server..."
-export FLASK_APP=src/order_server/views.py
-python3 -m flask run --port 5001 2>/dev/null >/dev/null &
-pid_order=$!
-sleep 3
-if ! (ps | grep "python" | grep "$pid_order" | grep -v grep >/dev/null 2>&1)
-then
-	echo "Failed to start the order server" && return 1
-fi
+servers=("catalog_server", "order_server", "frontend_server")
+ports=("5000", "5001", "5002")
+machines=()
+local_pids=()
+pids=()
+#
+ # Read N - Number of servers. Keep assigning nodes to them - Catalog, Order, and Frontend and run the app accordingly. 
+ # Print the url of frontend server. 
+ # Run the client and test cases.
+echo "Setting up the servers on machines..."
+while IFS= read -r line
+do
+  machines+=($line)
+done < machines.txt
 
-
-# Run frontend server and validate if it's running successfully.
-echo "  Starting frontend server..."
-export FLASK_APP=src/frontend_server/views.py 
-python3 -m flask run --port 5002 2>/dev/null >/dev/null &
-pid_frontend=$!
-sleep 3
-if ! (ps | grep "python" | grep "$pid_frontend" | grep -v grep >/dev/null 2>&1)
-then
-	echo "Failed to start the frontend server" && return 1
-fi
-
+for i in ${!servers[@]}; do
+  role=${servers[$i]}
+  ip=${machines[$i]}
+  port=${ports[$i]}
+  if [[ "$ip" == *"http://localhost" ]] || [[ "$ip" == *"http://127.0.0.1" ]]
+  then
+    echo "Running $role on Localhost...."
+    export FLASK_APP=src/$role/views.py
+    python3 -m flask run --port $port 2>/dev/null &
+    pid=$!
+    sleep 3
+    if ! (ps -ef | grep "python" | grep "$pid_order" | grep -v grep >/dev/null 2>&1)
+    then
+	    echo "Failed to start $role" && return 1
+    fi
+    pid=$!
+    sleep 3
+    ps | grep "python" | grep "$pid" | grep -v grep >/dev/null 2>&1
+    status=$?
+    local_pids+=($pid)
+  else
+    echo "Running role $role on remote machine $ip."
+    dir[id]="temp_$id"
+    ssh -n ec2-user@"$ip" "rm -rf temp_$id && mkdir temp_$id && cd temp_id && git clone https://github.com/CS677-Labs/Lab-2-Pygmy-The-book-store.git || echo \"Repo already present\""
+    scp "machines.txt" ec2-user@"$ip":"temp_$id"
+    pid=$(ssh -n ec2-user@$ip "cd temp_$id/Lab-2-Pygmy-The-book-store/src/$role && export FLASK_APP=views.py && (python3 -m flask run --port $port 2>/dev/null & echo \$!)")
+    sleep 2
+    status=0
+    ssh -n ec2-user@"$ip" "ps -ef | grep java | grep $pid | grep -v grep" || status=$?
+    pids[id]=$pid
+  fi
+  if [[ "$status" != 0 ]]
+  then
+	  echo "Failed to start the server $role in machine with ip $ip. Exiting..." && return 1
+  fi
+done
+  
 echo "All set for testing...."
 echo "---------------------------------------------------------------"
 sleep 1
-
+frontend_server="${machines[2]}:${ports[2]}"
 testcaseFailed=0
 
 # Run test cases
 echo "Test Case 1."
 echo "Doing a lookup for id 1. Expecting it to Succeed."
 
-tmpoutput=$(python3 src/cli/main.py lookup 1)
+tmpoutput=$(python3 src/cli/main.py $frontend_server lookup 1)
 if [[ $tmpoutput == *"Failed"* ]] ; then
     echo "Result: Failed to lookup for book with id 1"
     testcaseFailed=1
@@ -70,7 +100,7 @@ echo "---------------------------------------------------------------"
 echo "---------------------------------------------------------------"
 echo "Test Case 2."
 echo "Doing a lookup for id 5. Expecting it to fail."
-tmpoutput=$(python3 src/cli/main.py lookup 5)
+tmpoutput=$(python3 src/cli/main.py $frontend_server lookup 5)
 if [[ $tmpoutput == *"Failed"* ]] ; then
     echo "Result: Failed to lookup for book with id 5, as excepted."
 else
@@ -81,7 +111,7 @@ echo "---------------------------------------------------------------"
 echo "---------------------------------------------------------------"
 echo "Test Case 3."
 echo "Searching for topic 'distributed systems'. Expected it to succeed."
-tmpoutput=$(python3 src/cli/main.py search --topic "distributed systems")
+tmpoutput=$(python3 src/cli/main.py $frontend_server search --topic "distributed systems")
 if [[ $tmpoutput == *"title"* ]] ; then
     echo "Result: Success"
 else
@@ -92,7 +122,7 @@ echo "---------------------------------------------------------------"
 echo "---------------------------------------------------------------"
 echo "Test Case 4."
 echo "Searching for topic 'machine learning'. Expecting it to fail."
-tmpoutput=$(python3 src/cli/main.py search --topic "machine learning")
+tmpoutput=$(python3 src/cli/main.py $frontend_server search --topic "machine learning")
 if [[ $tmpoutput == *"title"* ]] ; then
     echo "Result: Success"
     testcaseFailed=1
@@ -103,7 +133,7 @@ echo "---------------------------------------------------------------"
 echo "---------------------------------------------------------------"
 echo "Test Case 5."
 echo "Looking up book with ID 2. Excepting it to succeed."
-tmpoutput=$(python3 src/cli/main.py lookup 2)
+tmpoutput=$(python3 src/cli/main.py $frontend_server lookup 2)
 if [[ $tmpoutput == *"Failed"* ]] ; then
     echo "Result: Failed to lookup for book with id 2"
     testcaseFailed=1
@@ -124,7 +154,7 @@ else
     testcaseFailed=1
 fi
 echo "Looking up book with ID 2. Expecting it to succeed.". 
-tmpoutput=$(python3 src/cli/main.py lookup 2)
+tmpoutput=$(python3 src/cli/main.py $frontend_server lookup 2)
 if [[ $tmpoutput == *"Failed"* ]] ; then
     echo "Result: Failed to lookup for book with id 2"
     testcaseFailed=1
