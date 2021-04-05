@@ -3,7 +3,7 @@ import json
 from flask import request, jsonify, Response
 from sqlalchemy import exc
 
-from src.catalog_server.models import Book, BookSchema, db, app
+from models import Book, BookSchema, db, app
 
 book_schema = BookSchema()
 books_schema = BookSchema(many=True)
