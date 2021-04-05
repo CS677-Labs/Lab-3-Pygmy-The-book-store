@@ -5,8 +5,7 @@ import logging
 import os
 from orders_db import appendOrderDetailsToDb
 
-f = open("demofile.txt", "r")
-print(f.readline())logging.basicConfig(filename='Orders.log', level=logging.DEBUG)
+logging.basicConfig(filename='Orders.log', level=logging.DEBUG)
 orderServer = flask.Flask(__name__)
 catalogServerURL = "http://127.0.0.1:5000/"
 
