@@ -7,7 +7,7 @@ from orders_db import appendOrderDetailsToDb
 
 logging.basicConfig(filename='orders.log', level=logging.DEBUG)
 orderServer = flask.Flask(__name__)
-catalogServerURL = "http://127.0.0.1:5000/"
+catalogServerIP = "127.0.0.1"
 
 @orderServer.route('/books/<id>', methods=['POST'])
 def placeOrder(id):
@@ -16,7 +16,8 @@ def placeOrder(id):
     f = open("machines.txt", "r")
     catalogServerIP = f.readline().rstrip('\r\n')
     f.close()
-
+    
+    catalogServerURL = f"http://{catalogServerIP}:5000/"
     # Do a lookup for this id
     logging.info("Looking up {} on catalog server".format(id))
     try:
