@@ -10,13 +10,13 @@ flask = flask.Flask(__name__)
 @flask.route('/books/<int:item_number>', methods=['GET'])
 def lookup(item_number: int):    
 
-    f = open("machines.txt", "r")
+    f = open("config", "r")
     catalogServerIP = f.readline().rstrip('\r\n')
     f.close()
     
     try:
         url=f'http://{catalogServerIP}:5000/books/{item_number}'
-        logging.info(f"Trying to connect to {url}")
+        logging.debug(f"Trying to connect to {url}")
         r = requests.get(url)
     except requests.exceptions.RequestException as e:
         logging.error(f"Exception occured. {e}")
@@ -33,7 +33,7 @@ def lookup(item_number: int):
 def search():
     topic = request.args.get('topic')
     
-    f = open("machines.txt", "r")
+    f = open("config", "r")
     catalogServerIP = f.readline().rstrip('\r\n')
     f.close()
     
@@ -56,7 +56,7 @@ def search():
 @flask.route('/books/<int:item_number>', methods=['POST'])
 def buy(item_number: int):
     
-    f = open("machines.txt", "r")
+    f = open("config", "r")
     catalogServerIP = f.readline().rstrip('\r\n')
     orderServerIP = f.readline().rstrip('\r\n')
     f.close()

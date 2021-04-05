@@ -13,7 +13,7 @@ catalogServerIP = "127.0.0.1"
 def placeOrder(id):
     id = int(id)
     
-    f = open("machines.txt", "r")
+    f = open("config", "r")
     catalogServerIP = f.readline().rstrip('\r\n')
     f.close()
     

@@ -12,19 +12,24 @@ function finish {
 #  # For remote cleanup
   for i in ${!servers[@]}; do	    
     ip=${machines[$i]}
-    echo "Attempting to cleanup ${servers[$i]} with PID ${pids[$i]} on $ip"
-    ssh -n ec2-user@"$ip" "kill -9 ${pids[$i]}" || echo "Failed to kill process $i."
+    if [[ "$ip" != *"localhost" ]]
+    then
+    	echo "Attempting to cleanup ${servers[$i]} with PID ${pids[$i]} on $ip"
+    	ssh -n ec2-user@"$ip" "kill -9 ${pids[$i]}" || echo "Failed to kill process $i."
+    fi
   done
+  return
 }
 trap finish EXIT
-trap finish RETURN
-
+trap finish INT
 
 servers=("catalog_server" "order_server" "frontend_server")
 ports=("5000" "5001" "5002")
 machines=()
 local_pids=()
 pids=()
+configFile=$1
+echo $configFile
 #
  # Read N - Number of servers. Keep assigning nodes to them - Catalog, Order, and Frontend and run the app accordingly. 
  # Print the url of frontend server. 
@@ -33,7 +38,7 @@ echo "Setting up the servers on machines..."
 while IFS= read -r line
 do
   machines+=($line)
-done < machines.txt
+done < $configFile
 
 for i in ${!servers[@]}; do
   role=${servers[$i]}
@@ -42,6 +47,7 @@ for i in ${!servers[@]}; do
   if [[ "$ip" == *"localhost" ]] || [[ "$ip" == *"127.0.0.1" ]]
   then
     echo "Running $role on Localhost...."
+    cp -f $configFile "config"
     export FLASK_APP=src/$role/views.py
     python3 -m flask run --port $port 1>/dev/null 2>&1 &
     pid=$!
@@ -59,7 +65,7 @@ for i in ${!servers[@]}; do
     echo "Running role $role on remote machine $ip."
     dir[$i]="temp_$i"
     ssh -n ec2-user@"$ip" "rm -rf temp_$i && mkdir temp_$i && cd temp_$i && git clone https://github.com/CS677-Labs/Lab-2-Pygmy-The-book-store 1>/dev/null 2>&1  && cd L* && git checkout feature/multi-servers-2 1>/dev/null 2>&1 || echo \"Repo already present\""
-    scp "machines.txt" ec2-user@"$ip":"temp_$i/Lab-2-Pygmy-The-book-store/src/$role/"
+    scp "machines.txt" ec2-user@"$ip":"temp_$i/Lab-2-Pygmy-The-book-store/src/$role/config"
     pid=$(ssh -n ec2-user@$ip "pip3 install -r temp_$i/Lab-2-Pygmy-The-book-store/requirements.txt 1>/dev/null 2>&1  && cd temp_$i/Lab-2-Pygmy-The-book-store/src/$role && export FLASK_APP=views.py && (python3 -m flask run --host 0.0.0.0 --port $port 1>/dev/null 2>&1 & echo \$!)")
     echo $pid
     sleep 2
