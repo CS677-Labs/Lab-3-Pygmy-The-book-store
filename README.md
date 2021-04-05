@@ -10,11 +10,22 @@ World's smallest book store with a two-tier web design
 - Milestone 1 - https://github.com/CS677-Labs/Lab-1-The_Bazaar/tree/milestone1
 
 
-## Run testcases for Milestone 1
+## Run testcases for Single server, single client usecase
 ```
 cd Lab-2-Pygmy-The-book-store
-chmod 777 test/Milestone_1_Testcases.sh
-bash test/Milestone_1_Testcases.sh
+chmod 777 test/SingleServerSingleClient.sh
+bash test/SingleServerSingleClient.sh
+```
+
+## Run testcases for Multi server, single client usecase
+Create a file "machines.txt" with 3 lines. 
+First line has the IP of the server where catalog server is to be launched.
+Second line has the IP of the server where order server is to be launched.
+Third line has the IP of the server where frontend server is to be launched.
+```
+cd Lab-2-Pygmy-The-book-store
+chmod 777 test/MultiServerSingleClient.sh
+bash test/MultiServerSingleClient.sh machines.txt
 ```
 
 ## Usage
