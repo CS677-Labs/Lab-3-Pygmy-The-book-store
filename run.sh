@@ -10,18 +10,11 @@ function finish {
   done
 
 #  # For remote cleanup
-  while IFS= read -r line
-  do
-    newline=(${line//=/ })
-    id=${newline[0]}
-    network=(${newline[1]//,/ })
-    url=(${network[0]//:/ })
-    ip="${url[0]}:${url[1]}"
-    fullurl=$ip
-    ip=$(echo "$fullurl" |sed 's/https\?:\/\///')
-    ssh -n ec2-user@"$ip" "kill ${pids[id]}" || echo "Failed to kill process $i."
-  done < "network-config.properties"
-  rm -rf build/* >/dev/null 2>&1
+  for i in ${!servers[@]}; do	    
+    ip=${machines[$i]}
+    echo "Attempting to cleanup ${servers[$i]} with PID ${pids[$i]} on $ip"
+    ssh -n ec2-user@"$ip" "kill -9 ${pids[$i]}" || echo "Failed to kill process $i."
+  done
 }
 trap finish EXIT
 trap finish RETURN
