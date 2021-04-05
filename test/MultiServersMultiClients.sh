@@ -56,7 +56,6 @@ echo "---------------------------------------------------------------"
 echo "---------------------------------------------------------------"
 echo "Test Case 3."
 echo "Searching for topic 'distributed systems'. Expected it to succeed."
-python3 src/cli/main.py ${machines[2]} search --topic "distributed systems" &
 tmpout=$(python3 src/cli/main.py ${machines[2]} search --topic "distributed systems")
 if [[ $tmpoutput == *"title"* ]] ; then
     echo "Result: Success"
