@@ -2,8 +2,8 @@
 set -e
 function finish {
   echo "Cleanup"
-  echo "q" > /tmp/run_inp
-  rm /tmp/run_inp
+  echo "q" > /tmp/run_inp || echo "Failed exiting run.sh"
+  rm /tmp/run_inp || echo "Failed to remove fifo file. Soft error."
   sleep 3
 }
 trap finish EXIT
