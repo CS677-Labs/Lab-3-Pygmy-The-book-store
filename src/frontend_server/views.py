@@ -4,19 +4,22 @@ import logging
 import os
 import requests
 
-logging.basicConfig(filename='frontend.log', level=logging.WARNING)
+logging.basicConfig(filename='frontend.log', level=logging.DEBUG)
 flask = flask.Flask(__name__)
 
 @flask.route('/books/<int:item_number>', methods=['GET'])
 def lookup(item_number: int):    
 
     f = open("machines.txt", "r")
-    catalogServerIP = f.readline()
+    catalogServerIP = f.readline().rstrip('\r\n')
     f.close()
     
     try:
-        r = requests.get(f'http://{catalogServerIP}:5000/books/{item_number}')
+        url=f'http://{catalogServerIP}:5000/books/{item_number}'
+        logging.info(f"Trying to connect to {url}")
+        r = requests.get(url)
     except requests.exceptions.RequestException as e:
+        logging.error(f"Exception occured. {e}")
         return f"Ughh! Catalog server seems to be down. Failed to fetch the book with item number {item_number}.", 501
     if r.status_code != 200:
         error_msg = f"Failed to fetch the book with item number {item_number}."
@@ -31,7 +34,7 @@ def search():
     topic = request.args.get('topic')
     
     f = open("machines.txt", "r")
-    catalogServerIP = f.readline()
+    catalogServerIP = f.readline().rstrip('\r\n')
     f.close()
     
     if topic is None:
@@ -39,8 +42,11 @@ def search():
     
     payload = {'topic':topic}
     try:
-        r = requests.get(f'http://{catalogServerIP}:5000/books', params=payload)
+        url=f'http://{catalogServerIP}:5000/books'
+        logging.info(f"Trying to connect to {url}")
+        r = requests.get(url, params=payload)
     except requests.exceptions.RequestException as e:
+        logging.error(f"Exception occured. {e}")
         return f"Ughh! Catalog server seems to be down. Failed to fetch the books for the topic {topic}.", 501
     if r.status_code != 200:
         return f"Failed to fetch the books related to topic {topic}.", r.status_code
@@ -51,13 +57,16 @@ def search():
 def buy(item_number: int):
     
     f = open("machines.txt", "r")
-    catalogServerIP = f.readline()
-    orderServerIP = f.readline()
+    catalogServerIP = f.readline().rstrip('\r\n')
+    orderServerIP = f.readline().rstrip('\r\n')
     f.close()
 
     try:
-        r = requests.post(f'http://{orderServerIP}:5001/books/{item_number}')
+        url=f'http://{orderServerIP}:5001/books/{item_number}'
+        logging.info(f"Trying to connect to {url}")
+        r = requests.post(url)
     except requests.exceptions.RequestException as e:
+        logging.error(f"Exception occured. {e}")
         return f"Ughh! Order server seems to be down. Failed to buy the book with item number {item_number}.", 501
         
     if r.status_code != 200:

@@ -46,14 +46,14 @@ for i in ${!servers[@]}; do
   role=${servers[$i]}
   ip=${machines[$i]}
   port=${ports[$i]}
-  if [[ "$ip" == *"http://localhost" ]] || [[ "$ip" == *"http://127.0.0.1" ]]
+  if [[ "$ip" == *"localhost" ]] || [[ "$ip" == *"127.0.0.1" ]]
   then
     echo "Running $role on Localhost...."
     export FLASK_APP=src/$role/views.py
-    python3 -m flask run --port $port 2>/dev/null &
+    python3 -m flask run --port $port 1>/dev/null 2>&1 &
     pid=$!
     sleep 3
-    if ! (ps -ef | grep "python" | grep "$pid_order" | grep -v grep >/dev/null 2>&1)
+    if ! (ps -ef | grep "python" | grep "$pid" | grep -v grep >/dev/null 2>&1)
     then
 	    echo "Failed to start $role" && return 1
     fi
@@ -67,7 +67,7 @@ for i in ${!servers[@]}; do
     dir[$i]="temp_$i"
     ssh -n ec2-user@"$ip" "rm -rf temp_$i && mkdir temp_$i && cd temp_$i && git clone https://github.com/CS677-Labs/Lab-2-Pygmy-The-book-store 1>/dev/null 2>&1  && cd L* && git checkout feature/multi-servers-2 1>/dev/null 2>&1 || echo \"Repo already present\""
     scp "machines.txt" ec2-user@"$ip":"temp_$i/Lab-2-Pygmy-The-book-store/src/$role/"
-    pid=$(ssh -n ec2-user@$ip "sudo pip3 install -r temp_$i/Lab-2-Pygmy-The-book-store/requirements.txt 1>/dev/null 2>&1  && cd temp_$i/Lab-2-Pygmy-The-book-store/src/$role && export FLASK_APP=views.py && (python3 -m flask run --host 0.0.0.0 --port $port 1>/dev/null 2>&1 & echo \$!)")
+    pid=$(ssh -n ec2-user@$ip "pip3 install -r temp_$i/Lab-2-Pygmy-The-book-store/requirements.txt 1>/dev/null 2>&1  && cd temp_$i/Lab-2-Pygmy-The-book-store/src/$role && export FLASK_APP=views.py && (python3 -m flask run --host 0.0.0.0 --port $port 1>/dev/null 2>&1 & echo \$!)")
     echo $pid
     sleep 2
     status=0

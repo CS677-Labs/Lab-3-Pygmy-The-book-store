@@ -1,10 +1,7 @@
 import requests
 from typing import Dict, List
 
-FRONTEND_URL= ""
-
-
-def get_book(item_number: int) -> Dict:
+def get_book(item_number: int, FRONTEND_URL: str) -> Dict:
     """
     Fetches the book corresponding to item number item_number from the front end server.
     """
@@ -18,7 +15,7 @@ def get_book(item_number: int) -> Dict:
         raise Exception(str(response.text))
     return response.json()
 
-def get_books_by_topic(topic: str) -> List[Dict]:
+def get_books_by_topic(topic: str, FRONTEND_URL: str) -> List[Dict]:
     payload = {"topic": topic}
     try:
         response = requests.get(f"{FRONTEND_URL}/books", params=payload)
@@ -30,7 +27,7 @@ def get_books_by_topic(topic: str) -> List[Dict]:
     
     return response.json()
 
-def buy_book(item_number: int) -> Dict:
+def buy_book(item_number: int, FRONTEND_URL: str) -> Dict:
     try:
         response = requests.post(f"{FRONTEND_URL}/books/{item_number}")
     except requests.exceptions.RequestException as e:
@@ -39,5 +36,4 @@ def buy_book(item_number: int) -> Dict:
     if response.status_code != 200:
         raise Exception(str(response.text))
     return response.json()
-
 
