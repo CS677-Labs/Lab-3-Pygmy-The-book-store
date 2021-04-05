@@ -27,8 +27,8 @@ trap finish EXIT
 trap finish RETURN
 
 
-servers=("catalog_server", "order_server", "frontend_server")
-ports=("5000", "5001", "5002")
+servers=("catalog_server" "order_server" "frontend_server")
+ports=("5000" "5001" "5002")
 machines=()
 local_pids=()
 pids=()
@@ -64,21 +64,22 @@ for i in ${!servers[@]}; do
     local_pids+=($pid)
   else
     echo "Running role $role on remote machine $ip."
-    dir[id]="temp_$id"
-    ssh -n ec2-user@"$ip" "rm -rf temp_$id && mkdir temp_$id && cd temp_id && git clone https://github.com/CS677-Labs/Lab-2-Pygmy-The-book-store.git || echo \"Repo already present\""
-    scp "machines.txt" ec2-user@"$ip":"temp_$id"
-    pid=$(ssh -n ec2-user@$ip "cd temp_$id/Lab-2-Pygmy-The-book-store/src/$role && export FLASK_APP=views.py && (python3 -m flask run --port $port 2>/dev/null & echo \$!)")
+    dir[$i]="temp_$i"
+    ssh -n ec2-user@"$ip" "rm -rf temp_$i && mkdir temp_$i && cd temp_$i && git clone https://github.com/CS677-Labs/Lab-2-Pygmy-The-book-store 1>/dev/null 2>&1  && cd L* && git checkout feature/multi-servers-2 1>/dev/null 2>&1 || echo \"Repo already present\""
+    scp "machines.txt" ec2-user@"$ip":"temp_$i/Lab-2-Pygmy-The-book-store/src/$role/"
+    pid=$(ssh -n ec2-user@$ip "sudo pip3 install -r temp_$i/Lab-2-Pygmy-The-book-store/requirements.txt 1>/dev/null 2>&1  && cd temp_$i/Lab-2-Pygmy-The-book-store/src/$role && export FLASK_APP=views.py && (python3 -m flask run --host 0.0.0.0 --port $port 1>/dev/null 2>&1 & echo \$!)")
+    echo $pid
     sleep 2
     status=0
-    ssh -n ec2-user@"$ip" "ps -ef | grep java | grep $pid | grep -v grep" || status=$?
-    pids[id]=$pid
+    ssh -n ec2-user@"$ip" "ps -ef | grep python | grep $pid | grep -v grep" || status=$?
+    pids[i]=$pid
   fi
   if [[ "$status" != 0 ]]
   then
 	  echo "Failed to start the server $role in machine with ip $ip. Exiting..." && return 1
   fi
 done
-echo "Frontend server is running on ${machine[2]}.... Pass this to the CLI to use it with this server."
+echo "Frontend server is running on ${machines[2]}.... Pass this to the CLI to use it with this server."
 
 echo "Press 'q' to exit"
 count=0
