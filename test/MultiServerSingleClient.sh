@@ -14,11 +14,11 @@ configFile=$1
 
 echo "---------------------------------------------------------------"
 # Setting up
-rm /tmp/run_inp 1>/dev/null 2>&1 || echo "Failed to remove fifo file"
+echo "Setting up the test environment...Will sleep for 20 seconds"
+rm /tmp/run_inp 1>/dev/null 2>&1 || echo "Failed to remove fifo file. Soft error."
 mkfifo /tmp/run_inp
 tail -f /tmp/run_inp | bash run.sh $configFile 1>/dev/null 2>&1 &
 sleep 15
-echo "Setting up the test environment..."
 echo "All set for testing...."
 echo "---------------------------------------------------------------"
 sleep 1
