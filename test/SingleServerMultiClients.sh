@@ -15,9 +15,10 @@ configFile=$1
 echo "---------------------------------------------------------------"
 # Setting up
 echo "Setting up the test environment...Will sleep for 20 seconds"
-rm /tmp/run_inp 1>/dev/null 2>&1 || echo "Failed to remove fifo file. Soft error."
+# Setting up
+rm /tmp/run_inp 2>/dev/null 1>&2 || echo "Failed to remove fifo file. Soft error."
 mkfifo /tmp/run_inp
-tail -f /tmp/run_inp | bash run.sh $configFile 1>/dev/null 2>&1 &
+tail -f /tmp/run_inp | bash run.sh "machines.txt.local" 1>/dev/null 2>&1 &
 sleep 15
 echo "All set for testing...."
 echo "---------------------------------------------------------------"
@@ -56,7 +57,8 @@ echo "---------------------------------------------------------------"
 echo "---------------------------------------------------------------"
 echo "Test Case 3."
 echo "Searching for topic 'distributed systems'. Expected it to succeed."
-tmpoutput=$(python3 src/cli/main.py ${machines[2]} search --topic "distributed systems")
+python3 src/cli/main.py ${machines[2]} search --topic "distributed systems" &
+tmpout=$(python3 src/cli/main.py ${machines[2]} search --topic "distributed systems")
 if [[ $tmpoutput == *"title"* ]] ; then
     echo "Result: Success"
 else
@@ -77,7 +79,7 @@ fi
 echo "---------------------------------------------------------------"
 echo "---------------------------------------------------------------"
 echo "Test Case 5."
-echo "Looking up book with ID 2. Excepting it to succeed."
+echo "Looking up book with ID 2. Expecting it to succeed."
 tmpoutput=$(python3 src/cli/main.py ${machines[2]} lookup 2)
 if [[ $tmpoutput == *"Failed"* ]] ; then
     echo "Result: Failed to lookup for book with id 2"
@@ -90,18 +92,14 @@ echo "---------------------------------------------------------------"
 echo "Test Case 6."
 countBefore=$(echo $tmpoutput | sed -n 's/^.*count.:.//p' | awk -F[,}] '{print $1}')
 echo "Current count of the - $countBefore"
-echo "Attempting to buy this book. Expecting it to succeed."
-tmpoutput=$(python3 src/cli/main.py ${machines[2]} buy 2)
-if [[ $tmpoutput == *"Hooray"* ]] ; then
-    echo "Result: Success"
-else
-    echo "Result: Failed to buy the book."
-    testcaseFailed=1
-fi
-echo "Looking up book with ID 2. Expecting it to succeed.". 
+echo "Attempting to buy this book twice concurrently."
+python3 src/cli/main.py ${machines[2]} buy 2 &
+python3 src/cli/main.py ${machines[2]} buy 2 &
+sleep 3
+echo "Fetching the count after concurrent buys."
 tmpoutput=$(python3 src/cli/main.py ${machines[2]} lookup 2)
 if [[ $tmpoutput == *"Failed"* ]] ; then
-    echo "Result: Failed to lookup for book with id 2"
+    echo "Result: Failed to lookup for book with id 2 for fetchign the count."
     testcaseFailed=1
 else
     echo "Result: Success"
@@ -110,10 +108,10 @@ countAfter=$(echo $tmpoutput | sed -n 's/^.*count.:.//p' | awk -F[,}] '{print $1
 echo "Count after buy - $countAfter"
 
 diff=$(($countBefore - $countAfter))
-if [[ $diff == 1 ]] ; then
-    echo "Count has been updated as expected"
+if [[ $diff == 2 ]] ; then
+    echo "Count has been updated as expected with concurrent request."
 else
-    echo "Count not updated as expected"
+    echo "Count not updated as expected with concurrent request."
     testcaseFailed=1
 fi
 echo "---------------------------------------------------------------"
