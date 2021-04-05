@@ -5,7 +5,8 @@ import logging
 import os
 from orders_db import appendOrderDetailsToDb
 
-logging.basicConfig(filename='Orders.log', level=logging.DEBUG)
+f = open("demofile.txt", "r")
+print(f.readline())logging.basicConfig(filename='Orders.log', level=logging.DEBUG)
 orderServer = flask.Flask(__name__)
 catalogServerURL = "http://127.0.0.1:5000/"
 
@@ -13,10 +14,14 @@ catalogServerURL = "http://127.0.0.1:5000/"
 def placeOrder(id):
     id = int(id)
     
+    f = open("machines.txt", "r")
+    catalogServerIP = f.readline()
+    f.close()
+
     # Do a lookup for this id
     logging.info("Looking up {} on catalog server".format(id))
     try:
-        response = requests.get(url=catalogServerURL+"books/"+str(id))
+        response = requests.get(url=f("http://{catalogServerIP}:5000/books/{id}"))
     except requests.exceptions.RequestException:
         return make_response (jsonify({"Error" : f"Ughh! Catalog server seems to be down."}),  501)
     lookupResult = True
@@ -52,4 +57,5 @@ def placeOrder(id):
 
     return response
 
-orderServer.run(port=5001,debug=True)
+if __name__ == '__main__':
+    orderServer.run(port=5001,debug=True)
