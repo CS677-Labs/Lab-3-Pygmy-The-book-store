@@ -25,7 +25,7 @@ def add_book():
 @app.route("/books", methods=["GET"])
 def get_books():
     filtered_books = Book.query.with_entities(Book.id, Book.title).filter_by(topic=request.args.get('topic')).all()
-    return jsonify([(dict(row)) for row in filtered_books]) # fixme using dump and jsonify directly results in an error
+    return jsonify([(dict(row)) for row in filtered_books])
 
 
 # Endpoint to get details of a book given the id
@@ -34,7 +34,7 @@ def book_detail(id):
     book = Book.query.with_entities(Book.cost, Book.count).filter_by(id=id).first()
     if not book:
         return Response(json.dumps({"message": f"Book with id {id} not found."}), status=404, mimetype='application/json')
-    return jsonify(dict(book)) # fixme using dump and jsonify directly results in an error
+    return jsonify(dict(book))
 
 
 # Endpoint to update details of a book
