@@ -7,9 +7,8 @@ World's smallest book store with a two-tier web design
   * Brinda Murulidhara (32578418, bmurulidhara@umass.edu)
 
 **Milestones**
-- Milestone 1 - https://github.com/CS677-Labs/Lab-1-The_Bazaar/tree/milestone1
-- Milestone 2 - https://github.com/CS677-Labs/Lab-1-The_Bazaar/tree/milestone2
-
+- Milestone 1 - https://github.com/CS677-Labs/Lab-2-Pygmy-The-book-store/tree/milestone1
+- Milestone 2 - https://github.com/CS677-Labs/Lab-2-Pygmy-The-book-store/tree/milestone2
 
 ## Run testcases for Single server, single client usecase
 ```
