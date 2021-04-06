@@ -38,7 +38,7 @@ testcaseFailed=0
 echo "Test Case 1."
 echo "Doing a lookup for id 1. Expecting it to Succeed."
 
-tmpoutput=$(python3 src/cli/main.py localhost lookup 1)
+tmpoutput=$(python3 src/cli/main.py lookup 1)
 if [[ $tmpoutput == *"Failed"* ]] ; then
     echo "Result: Failed to lookup for book with id 1"
     testcaseFailed=1
@@ -49,7 +49,7 @@ echo "---------------------------------------------------------------"
 echo "---------------------------------------------------------------"
 echo "Test Case 2."
 echo "Doing a lookup for id 5. Expecting it to fail."
-tmpoutput=$(python3 src/cli/main.py localhost lookup 5)
+tmpoutput=$(python3 src/cli/main.py lookup 5)
 if [[ $tmpoutput == *"Failed"* ]] ; then
     echo "Result: Failed to lookup for book with id 5, as excepted."
 else
@@ -60,7 +60,7 @@ echo "---------------------------------------------------------------"
 echo "---------------------------------------------------------------"
 echo "Test Case 3."
 echo "Searching for topic 'distributed systems'. Expected it to succeed."
-tmpoutput=$(python3 src/cli/main.py localhost search --topic "distributed systems")
+tmpoutput=$(python3 src/cli/main.py search --topic "distributed systems")
 if [[ $tmpoutput == *"title"* ]] ; then
     echo "Result: Success"
 else
@@ -71,7 +71,7 @@ echo "---------------------------------------------------------------"
 echo "---------------------------------------------------------------"
 echo "Test Case 4."
 echo "Searching for topic 'machine learning'. Expecting it to fail."
-tmpoutput=$(python3 src/cli/main.py localhost search --topic "machine learning")
+tmpoutput=$(python3 src/cli/main.py search --topic "machine learning")
 if [[ $tmpoutput == *"title"* ]] ; then
     echo "Result: Success"
     testcaseFailed=1
@@ -82,7 +82,7 @@ echo "---------------------------------------------------------------"
 echo "---------------------------------------------------------------"
 echo "Test Case 5."
 echo "Looking up book with ID 2. Expecting it to succeed."
-tmpoutput=$(python3 src/cli/main.py localhost lookup 2)
+tmpoutput=$(python3 src/cli/main.py lookup 2)
 if [[ $tmpoutput == *"Failed"* ]] ; then
     echo "Result: Failed to lookup for book with id 2"
     testcaseFailed=1
@@ -95,11 +95,11 @@ echo "Test Case 6."
 countBefore=$(echo $tmpoutput | sed -n 's/^.*count.:.//p' | awk -F[,}] '{print $1}')
 echo "Current count of the - $countBefore"
 echo "Attempting to buy this book twice concurrently."
-python3 src/cli/main.py localhost buy 2 &
-python3 src/cli/main.py localhost buy 2 &
+python3 src/cli/main.py buy 2 &
+python3 src/cli/main.py buy 2 &
 sleep 5
 echo "Fetching the count after concurrent buys."
-tmpoutput=$(python3 src/cli/main.py localhost lookup 2)
+tmpoutput=$(python3 src/cli/main.py lookup 2)
 if [[ $tmpoutput == *"Failed"* ]] ; then
     echo "Result: Failed to lookup for book with id 2 for fetchign the count."
     testcaseFailed=1
