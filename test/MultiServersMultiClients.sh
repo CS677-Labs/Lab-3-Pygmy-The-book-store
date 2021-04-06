@@ -97,7 +97,7 @@ echo "Current count of the - $countBefore"
 echo "Attempting to buy this book twice concurrently."
 python3 src/cli/main.py --frontend_server ${machines[2]} buy 2 &
 python3 src/cli/main.py --frontend_server ${machines[2]} buy 2 &
-sleep 3
+sleep 5
 echo "Fetching the count after concurrent buys."
 tmpoutput=$(python3 src/cli/main.py --frontend_server ${machines[2]} lookup 2)
 if [[ $tmpoutput == *"Failed"* ]] ; then
