@@ -3,7 +3,7 @@ import json
 from flask import request, jsonify, Response
 from sqlalchemy import exc
 
-from src.catalog_server.models import Book, BookSchema, db, app
+from models import Book, BookSchema, db, app
 
 book_schema = BookSchema()
 books_schema = BookSchema(many=True)
@@ -40,7 +40,8 @@ def book_detail(id):
 # Endpoint to update details of a book
 @app.route("/books/<id>", methods=["PATCH"])
 def book_update(id):
-    book = Book.query.get(id)
+    # Handling concurrent requests
+    book = db.session.query(Book).filter(Book.id==id).with_for_update().one()
     current_book_count = book.count
     book.topic = request.json.get('topic') or book.topic
     book.title = request.json.get('title') or book.title
