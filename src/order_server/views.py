@@ -1,8 +1,9 @@
+import logging
+
 import flask
 import requests
-from flask import request, jsonify, Response, make_response
-import logging
-import os
+from flask import jsonify, make_response
+
 from orders_db import appendOrderDetailsToDb
 
 logging.basicConfig(filename='orders.log', level=logging.DEBUG)

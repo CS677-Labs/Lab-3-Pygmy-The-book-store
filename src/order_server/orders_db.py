@@ -6,6 +6,15 @@ import os
 
 logging.basicConfig(filename='Orders.log', level=logging.DEBUG)
 
+
+def log_query(query):
+    """
+    Function to log every query that is executed on the orders DB.
+    """
+    with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), "logs", "query_log.txt"), 'a') as f:
+        f.write(query+'\n')
+
+
 def create_connection():
     db_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "data")
     db_file = os.path.join(db_dir, "orders.db")
@@ -15,6 +24,7 @@ def create_connection():
     conn = None
     try:
         conn = sqlite3.connect(db_file)
+        conn.set_trace_callback(log_query)
     except Error as e:
         logging.error("Failed to open connection to sqlite DB. Error - " + str(e))
     
