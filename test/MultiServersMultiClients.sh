@@ -17,7 +17,7 @@ echo "---------------------------------------------------------------"
 echo "Setting up the test environment...Will sleep for 20 seconds"
 rm /tmp/run_inp 1>/dev/null 2>&1 || echo "Failed to remove fifo file. Soft error."
 mkfifo /tmp/run_inp
-tail -f /tmp/run_inp | bash run.sh $configFile 1>/dev/null 2>&1 &
+tail -f /tmp/run_inp | bash run.sh $configFile 1 &
 sleep 15
 echo "All set for testing...."
 echo "---------------------------------------------------------------"
@@ -97,7 +97,7 @@ sleep 3
 echo "Fetching the count after concurrent buys."
 tmpoutput=$(python3 src/cli/main.py ${machines[2]} lookup 2)
 if [[ $tmpoutput == *"Failed"* ]] ; then
-    echo "Result: Failed to lookup for book with id 2 for fetchign the count."
+    echo "Result: Failed to lookup for book with id 2 for fetching the count."
     testcaseFailed=1
 else
     echo "Result: Success"
