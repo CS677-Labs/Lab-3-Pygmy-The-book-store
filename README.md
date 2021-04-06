@@ -8,6 +8,7 @@ World's smallest book store with a two-tier web design
 
 **Milestones**
 - Milestone 1 - https://github.com/CS677-Labs/Lab-1-The_Bazaar/tree/milestone1
+- Milestone 2 - https://github.com/CS677-Labs/Lab-1-The_Bazaar/tree/milestone2
 
 
 ## Run testcases for Single server, single client usecase
@@ -36,50 +37,23 @@ bash test/MultiServerMultiClients.sh machines.txt
 ```
 
 ## Usage
-### Running the servers on localhost
+### Running the servers
 ```
 pip install virtualenv
 virtualenv .venv
-```
-#### Catalog server
-```
+
 #For linux based
 source .venv/bin/activate
 #For windows based
 .venv/scripts/activate.bat
 
-pip install -r src/catalog_server/requirements.txt
-
-export FLASK_APP=src/catalog_server/views.py
-python -m flask run --port 5000
+pip install -r src/requirements.txt
 ```
-
-### Order server
-Open a new shell
+### Setup the servers on either localhost or multiple machines
+#### Create a txt file with any name and store three lines for the machine addresses for catalog, order and frontend servers respectively. For running the entire system on your localhost, use machines.txt.local.
 ```
-cd LAB-2-PYGMY-THE-BOOK-STORE
-#For linux based
-source .venv/bin/activate
-#For windows based
-.venv/scripts/activate.bat
-
-export FLASK_APP=src/order_server/order_server.py
-python -m flask run --port 5001
+bash run.sh machines.txt.local
 ```
-
-### Frontend server
-Open a new shell
-```
-cd LAB-2-PYGMY-THE-BOOK-STORE
-#For linux based
-source .venv/bin/activate
-#For windows based
-.venv/scripts/activate.bat
-
-export FLASK_APP=src/frontend_server/frontend.py
-python -m flask run --port 5002
-```
-
 
 ### CLI
 Open a new shell
@@ -94,17 +68,19 @@ cd src/cli
 ```
 #### Lookup 
 ```
-python main.py lookup <item number>
+python main.py --frontend_server <ip_of_frontend_server> lookup <item number>
 ```
+
+--frontend_server is optional. If not provided, it takes localhost as default.
 
 Example
 ```
-python main.py lookup 1
+python main.py --frontend_server --frontend_server ec2-35-175-129-185.compute-1.amazonaws.com lookup 1
 ```
 
 #### Search
 ```
-python main.py search --topic "<topic>"
+python main.py --frontend_server <ip_of_frontend_server> search --topic "<topic>"
 ```
 
 Example
@@ -114,7 +90,7 @@ python main.py search --topic "distributed systems"
 
 #### Buy
 ```
-python main.py buy <item number>
+python main.py --frontend_server <ip_of_frontend_server> buy <item number>
 ```
 
 Example
