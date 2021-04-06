@@ -70,7 +70,7 @@ for i in ${!servers[@]}; do
     echo $pid
     sleep 2
     status=0
-    ssh -n ec2-user@"$ip" "ps -ef | grep python | grep $pid | grep -v grep " || status=$?
+    ssh -n ec2-user@"$ip" "ps -ef | grep python | grep $pid | grep -v grep >/dev/null 2>&1" || status=$?
     pids[i]=$pid
   fi
   if [[ "$status" != 0 ]]
