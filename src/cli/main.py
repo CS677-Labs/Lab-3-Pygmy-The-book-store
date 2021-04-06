@@ -2,7 +2,7 @@ import click
 from book_requests import get_book, get_books_by_topic, buy_book
 
 @click.group()
-@click.argument("frontend_server", default="http://localhost:5002")
+@click.option("--frontend_server", default="localhost")
 @click.pass_context
 def bookstore(ctx, frontend_server: str):
     ctx.obj=f"http://{frontend_server}:5002"
