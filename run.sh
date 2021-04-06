@@ -49,7 +49,7 @@ for i in ${!servers[@]}; do
     echo "Running $role on Localhost...."
     cp -f $configFile "config"
     export FLASK_APP=src/$role/views.py
-    python3 -m flask run --port $port 1>/dev/null 2>&1 &
+    python3 -m flask run --port $port >/dev/null 2>&1 &
     pid=$!
     sleep 3
     if ! (ps -ef | grep "python" | grep "$pid" | grep -v grep >/dev/null 2>&1)
@@ -64,9 +64,10 @@ for i in ${!servers[@]}; do
   else
     echo "Running role $role on remote machine $ip."
     dir[$i]="temp_$i"
+    #Todo: Remove checkout
     ssh -n ec2-user@"$ip" "rm -rf temp_$i && mkdir temp_$i && cd temp_$i && git clone https://github.com/CS677-Labs/Lab-2-Pygmy-The-book-store 1>/dev/null 2>&1  && cd L* && git checkout feature/multi-servers-2 1>/dev/null 2>&1 || echo \"Repo already present\""
     scp "machines.txt" ec2-user@"$ip":"temp_$i/Lab-2-Pygmy-The-book-store/src/$role/config" >/dev/null 2>&1
-    pid=$(ssh -n ec2-user@$ip "sudo pip3 install -r temp_$i/Lab-2-Pygmy-The-book-store/requirements.txt 1>/dev/null 2>&1  && cd temp_$i/Lab-2-Pygmy-The-book-store/src/$role && export FLASK_APP=views.py && (python3 -m flask run --host 0.0.0.0 --port $port 1>/dev/null 2>&1 & echo \$!)")
+    pid=$(ssh -n ec2-user@$ip "sudo pip3 install -r temp_$i/Lab-2-Pygmy-The-book-store/requirements.txt 1>/dev/null 2>&1  && cd temp_$i/Lab-2-Pygmy-The-book-store/src/$role && export FLASK_APP=views.py && (python3 -m flask run --host 0.0.0.0 --port $port >/dev/null 2>&1 & echo \$!)")
     echo $pid
     sleep 2
     status=0
