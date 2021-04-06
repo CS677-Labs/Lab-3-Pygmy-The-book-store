@@ -75,7 +75,7 @@ python main.py --frontend_server <ip_of_frontend_server> lookup <item number>
 
 Example
 ```
-python main.py --frontend_server --frontend_server ec2-35-175-129-185.compute-1.amazonaws.com lookup 1
+python main.py --frontend_server ec2-35-175-129-185.compute-1.amazonaws.com lookup 1
 ```
 
 #### Search
