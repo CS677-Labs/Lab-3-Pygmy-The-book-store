@@ -19,7 +19,14 @@ echo "Setting up the test environment...Will sleep for 20 seconds"
 rm /tmp/run_inp 2>/dev/null 1>&2 || echo "Failed to remove fifo file. Soft error."
 mkfifo /tmp/run_inp
 tail -f /tmp/run_inp | bash run.sh $configFile 1>/dev/null 2>&1 &
+run_pid=$!
 sleep 15
+if ! (ps -ef | grep "run.sh" | grep -v grep >/dev/null 2>&1)
+    then
+	    echo "Failed to setup the servers...." && return 1
+fi
+
+
 echo "All set for testing...."
 echo "---------------------------------------------------------------"
 sleep 1
