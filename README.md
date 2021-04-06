@@ -17,15 +17,22 @@ chmod 777 test/SingleServerSingleClient.sh
 bash test/SingleServerSingleClient.sh
 ```
 
-## Run testcases for Multi server, single client usecase
+## Run testcases for Single server, multi client usecase
+```
+cd Lab-2-Pygmy-The-book-store
+chmod 777 test/SingleServerMultiClients.sh
+bash test/SingleServerMultiClients.sh
+```
+
+## Run testcases for Multi server, multi client usecase
 Create a file "machines.txt" with 3 lines. 
 First line has the IP of the server where catalog server is to be launched.
 Second line has the IP of the server where order server is to be launched.
 Third line has the IP of the server where frontend server is to be launched.
 ```
 cd Lab-2-Pygmy-The-book-store
-chmod 777 test/MultiServerSingleClient.sh
-bash test/MultiServerSingleClient.sh machines.txt
+chmod 777 test/MultiServerMultiClients.sh
+bash test/MultiServerMultiClients.sh machines.txt
 ```
 
 ## Usage
