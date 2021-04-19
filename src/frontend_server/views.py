@@ -76,6 +76,12 @@ def buy(item_number: int):
         return error_msg, r.status_code
     book = r.json()
     return book
-    
+
+@flask.route('/cache/<int:item_number>', methods=['DELETE'])
+def invalidate_cache(item_number: int):
+    # Cache for the item_number to be invalidated here.
+    return
+
+
 if __name__ == '__main__':
     flask.run(debug=True)
