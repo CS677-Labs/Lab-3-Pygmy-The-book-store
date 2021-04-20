@@ -13,12 +13,13 @@ cache = {}
 def lookup(item_number: int):
     global cache
     if item_number in cache:
+        logging.info(f'{item_number} found in cache.')
         return cache[item_number]
 
     f = open("config", "r")
     catalogServerIP = f.readline().rstrip('\r\n')
     f.close()
-    
+
     try:
         url = f'http://{catalogServerIP}:5000/books/{item_number}'
         logging.debug(f"Trying to connect to {url}")
@@ -33,6 +34,7 @@ def lookup(item_number: int):
         return error_msg, r.status_code
     book = r.json()
     cache[item_number] = book
+    logging.info(f'Caching lookup results of {item_number}')
     return book
 
 
