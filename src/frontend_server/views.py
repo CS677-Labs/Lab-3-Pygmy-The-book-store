@@ -4,11 +4,20 @@ import logging
 import os
 import requests
 
+from lru_cache import LRU
+
 logging.basicConfig(filename='frontend.log', level=logging.DEBUG)
 flask = flask.Flask(__name__)
+cache = LRU(maxsize=100)
+
 
 @flask.route('/books/<int:item_number>', methods=['GET'])
-def lookup(item_number: int):    
+def lookup(item_number: int):
+    global cache
+    cached_result = cache.get(item_number)
+    if cached_result:
+        logging.info(f'{item_number} found in cache.')
+        return cached_result
 
     f = open("config", "r")
     catalogServerIP = f.readline().rstrip('\r\n')
@@ -27,6 +36,8 @@ def lookup(item_number: int):
             error_msg += " "+ r.json()["message"]
         return error_msg, r.status_code
     book = r.json()
+    cache.put(item_number, book)
+    logging.info(f'Caching lookup results of {item_number}')
     return book
 
 @flask.route('/books', methods=['GET'])
