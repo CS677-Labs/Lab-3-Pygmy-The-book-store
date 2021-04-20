@@ -89,6 +89,9 @@ def buy(item_number: int):
 @flask.route('/cache/<int:item_number>', methods=['DELETE'])
 def invalidate_cache(item_number: int):
     # Cache for the item_number to be invalidated here.
+    logging.info(f'Invalidating cache for {item_number} if it exists')
+    cache.pop(item_number, None)
+    
     return
 
 if __name__ == '__main__':
