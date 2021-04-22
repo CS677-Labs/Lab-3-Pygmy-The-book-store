@@ -3,6 +3,7 @@ import logging
 import os
 import requests
 from flask import request, jsonify, Response
+from load_balancer import getCatalogServerURL, getOrderServerURL
 
 logging.basicConfig(filename='frontend.log', level=logging.DEBUG)
 flask = flask.Flask(__name__)
@@ -16,12 +17,10 @@ def lookup(item_number: int):
         logging.info(f'{item_number} found in cache.')
         return cache[item_number]
 
-    f = open("config", "r")
-    catalogServerIP = f.readline().rstrip('\r\n')
-    f.close()
+    catalogServerURL = getCatalogServerURL()
 
     try:
-        url = f'http://{catalogServerIP}:5000/books/{item_number}'
+        url = f'http://{catalogServerURL}/books/{item_number}'
         logging.debug(f"Trying to connect to {url}")
         r = requests.get(url)
     except requests.exceptions.RequestException as e:
@@ -42,16 +41,14 @@ def lookup(item_number: int):
 def search():
     topic = request.args.get('topic')
 
-    f = open("config", "r")
-    catalogServerIP = f.readline().rstrip('\r\n')
-    f.close()
+    catalogServerURL = getCatalogServerURL()
 
     if topic is None:
         return "The request must send the query parameter \"topic\"", 400
 
     payload = {'topic': topic}
     try:
-        url = f'http://{catalogServerIP}:5000/books'
+        url = f'http://{catalogServerURL}/books'
         logging.info(f"Trying to connect to {url}")
         r = requests.get(url, params=payload)
     except requests.exceptions.RequestException as e:
@@ -65,13 +62,11 @@ def search():
 
 @flask.route('/books/<int:item_number>', methods=['POST'])
 def buy(item_number: int):
-    f = open("config", "r")
-    catalogServerIP = f.readline().rstrip('\r\n')
-    orderServerIP = f.readline().rstrip('\r\n')
-    f.close()
+
+    orderServerURL = getOrderServerURL()
 
     try:
-        url = f'http://{orderServerIP}:5001/books/{item_number}'
+        url = f'http://{orderServerURL}/books/{item_number}'
         logging.info(f"Trying to connect to {url}")
         r = requests.post(url)
     except requests.exceptions.RequestException as e:
@@ -86,6 +81,13 @@ def buy(item_number: int):
     book = r.json()
     return book
 
+@flask.route('/cache/<int:item_number>', methods=['DELETE'])
+def invalidate_cache(item_number: int):
+    # Cache for the item_number to be invalidated here.
+    logging.info(f'Invalidating cache for {item_number} if it exists')
+    cache.pop(item_number, None)
+    
+    return
 
 if __name__ == '__main__':
     flask.run(debug=True)
