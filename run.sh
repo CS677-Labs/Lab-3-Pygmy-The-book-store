@@ -30,7 +30,6 @@ local_pids=()
 pids=()
 configFile=$1
 echo $configFile
-#
  # Read N - Number of servers. Keep assigning nodes to them - Catalog, Order, and Frontend and run the app accordingly. 
  # Print the url of frontend server. 
  # Run the client and test cases.
@@ -41,42 +40,46 @@ do
 done < $configFile
 
 for i in ${!servers[@]}; do
-  role=${servers[$i]}
-  ip=${machines[$i]}
-  port=${ports[$i]}
-  if [[ "$ip" == *"localhost" ]] || [[ "$ip" == *"127.0.0.1" ]]
-  then
-    echo "Running $role on Localhost...."
-    cp -f $configFile "config"
-    export FLASK_APP=src/$role/views.py
-    python3 -m flask run --port $port >/dev/null 2>&1 &
-    pid=$!
-    sleep 3
-    if ! (ps -ef | grep "python" | grep "$pid" | grep -v grep >/dev/null 2>&1)
+  role=${servers[i]}
+  ips=(${machines[i]//,/ })
+  port_offset=${ports[$i]}
+  for j in ${!ips[@]}; do
+    port=$((port_offset+j%3))
+    ip=${ips[j]}
+    if [[ "$ip" == *"localhost" ]] || [[ "$ip" == *"127.0.0.1" ]]
     then
-	    echo "Failed to start $role" && return 1
-    fi
-    pid=$!
-    sleep 3
-    ps | grep "python" | grep "$pid" | grep -v grep >/dev/null 2>&1
-    status=$?
-    local_pids+=($pid)
-  else
-    echo "Running role $role on remote machine $ip."
-    dir[$i]="temp_$i"
-    ssh -n ec2-user@"$ip" "rm -rf temp_$i && mkdir temp_$i && cd temp_$i && git clone https://github.com/CS677-Labs/Lab-2-Pygmy-The-book-store 1>/dev/null 2>&1  || echo \"Repo already present\""
-    scp "machines.txt" ec2-user@"$ip":"temp_$i/Lab-2-Pygmy-The-book-store/src/$role/config" >/dev/null 2>&1
-    pid=$(ssh -n ec2-user@$ip "sudo pip3 install -r temp_$i/Lab-2-Pygmy-The-book-store/requirements.txt 1>/dev/null 2>&1  && cd temp_$i/Lab-2-Pygmy-The-book-store/src/$role && export FLASK_APP=views.py && (python3 -m flask run --host 0.0.0.0 --port $port >/dev/null 2>&1 & echo \$!)")
-    echo $pid
-    sleep 2
-    status=0
-    ssh -n ec2-user@"$ip" "ps -ef | grep python | grep $pid | grep -v grep >/dev/null 2>&1" || status=$?
-    pids[i]=$pid
-  fi
-  if [[ "$status" != 0 ]]
-  then
-	  echo "Failed to start the server $role in machine with ip $ip. Exiting..." && return 1
-  fi
+      echo "Running $role on Localhost...."
+      cp -f $configFile "config"
+      export FLASK_APP=src/$role/views.py
+      python3 -m flask run --port $port >/dev/null 2>&1 &
+      pid=$!
+      sleep 3
+      if ! (ps -ef | grep "python" | grep "$pid" | grep -v grep >/dev/null 2>&1)
+      then
+        echo "Failed to start $role" && return 1
+      fi
+      pid=$!
+      sleep 3
+      ps | grep "python" | grep "$pid" | grep -v grep >/dev/null 2>&1
+      status=$?
+      local_pids+=($pid)
+      else
+        echo "Running role $role on remote machine $ip."
+        dir[$i]="temp_$i"
+        ssh -n ec2-user@"$ip" "rm -rf temp_$i && mkdir temp_$i && cd temp_$i && git clone https://github.com/CS677-Labs/Lab-2-Pygmy-The-book-store 1>/dev/null 2>&1  || echo \"Repo already present\""
+        scp "machines.txt" ec2-user@"$ip":"temp_$i/Lab-2-Pygmy-The-book-store/src/$role/config" >/dev/null 2>&1
+        pid=$(ssh -n ec2-user@$ip "sudo pip3 install -r temp_$i/Lab-2-Pygmy-The-book-store/requirements.txt 1>/dev/null 2>&1  && cd temp_$i/Lab-2-Pygmy-The-book-store/src/$role && export FLASK_APP=views.py && (python3 -m flask run --host 0.0.0.0 --port $port >/dev/null 2>&1 & echo \$!)")
+        echo $pid
+        sleep 2
+        status=0
+        ssh -n ec2-user@"$ip" "ps -ef | grep python | grep $pid | grep -v grep >/dev/null 2>&1" || status=$?
+        pids[i]=$pid
+      fi
+      if [[ "$status" != 0 ]]
+      then
+        echo "Failed to start the server $role in machine with ip $ip. Exiting..." && return 1
+      fi
+  done
 done
 echo "Frontend server is running on ${machines[2]}.... Pass this to the CLI to use it with this server."
 
