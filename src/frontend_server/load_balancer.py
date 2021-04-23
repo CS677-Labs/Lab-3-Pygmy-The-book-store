@@ -1,8 +1,5 @@
 from threading import Lock
 lock = Lock()
-
-catalog_server_URLS = []
-order_server_URLS = []
 indexOfNextServer = 0
 
 class Server:
