@@ -116,6 +116,7 @@ def book_delete(id):
         logging.info(f"Successfully invalidated frontend server's cache entry corresponding to ID {id}")
 
     return book_schema.jsonify(book)
+<<<<<<< HEAD
 
 class Server:
     catalog_servers_urls=[]
@@ -145,3 +146,6 @@ if __name__ == '__main__':
 
     o = urlparse(Server.catalog_servers_urls[node_num])
     app.run(port=o.port, debug=True)
+=======
+    
+>>>>>>> Fixed bugs

@@ -49,9 +49,8 @@ for i in ${!servers[@]}; do
     if [[ "$ip" == *"localhost" ]] || [[ "$ip" == *"127.0.0.1" ]]
     then
       echo "Running $role on Localhost...."
-      docker load < images/${role}.tar.gz
-      docker cp -f $configFile ${role}:/config
-      docker run -p $port:$port $role --host=0.0.0.0 --port $port >/dev/null 2>&1 &
+      docker load < docker/${role}.tar.gz
+      docker run -v $(pwd)/$configFile:/app/config -d -p $port:$port $role --host=0.0.0.0 --port $port >/dev/null 2>&1
       pid=$!
       sleep 3
       if ! (ps -ef | grep "python" | grep "$pid" | grep -v grep >/dev/null 2>&1)
@@ -68,7 +67,7 @@ for i in ${!servers[@]}; do
         dir[$i]="temp_$i"
         ssh -n ec2-user@"$ip" "rm -rf temp_$i && mkdir temp_$i && cd temp_$i && git clone https://github.com/CS677-Labs/Lab-3-Pygmy-The-book-store 1>/dev/null 2>&1  || echo \"Repo already present\""
         scp $configFile  ec2-user@"$ip":"temp_$i/Lab-3-Pygmy-The-book-store/src/$role/config" >/dev/null 2>&1
-        pid=$(ssh -n ec2-user@$ip "cd temp_$i/Lab-3-Pygmy-The-book-store && docker load images/${role}.tar.gz && docker cp -f $configFile ${role}:/config && (docker run -p $port:$port $role --host=0.0.0.0 --port $port >/dev/null 2>&1 & echo \$!)")
+        pid=$(ssh -n ec2-user@$ip "cd temp_$i/Lab-3-Pygmy-The-book-store && docker load docker/${role}.tar.gz && docker cp -f $configFile ${role}:/config && (docker run -v $(pwd)/config:/app/config -p $port:$port $role --host=0.0.0.0 --port $port >/dev/null 2>&1 & echo \$!)")
         echo $pid
         sleep 2
         status=0

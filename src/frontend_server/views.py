@@ -11,7 +11,22 @@ cache = {}
 from threading import Lock
 
 lock = Lock()
+# Function to read config file and populate info about diff catalog, order and frontend servers.
+def load_config(config_file_path):
+    catalog_port=5000
+    order_port=5001
+    frontend_ports=5002
+    with open(config_file_path, "r") as f:
+        catalogServerIPs = f.readline().rstrip('\r\n').split(",")
+        orderServerIPs = f.readline().rstrip('\r\n').split(",")
+        frontendServerIPs = f.readline().rstrip('\r\n').split(",")
+    for i,catalog_server_ip in enumerate(catalogServerIPs):
+        Server.catalog_servers_urls.append(f"http://{catalog_server_ip}:{catalog_port+i*3}")
+    for i,order_server_ip in enumerate(orderServerIPs):
+        Server.order_servers_urls.append(f"http://{order_server_ip}:{order_port+i*3}")
+    
 
+load_config("config")
 
 @flask.route('/books/<int:item_number>', methods=['GET'])
 def lookup(item_number: int):
@@ -96,19 +111,6 @@ def invalidate_cache(item_number: int):
     return Response(status=204)
 
 
-# Function to read config file and populate info about diff catalog, order and frontend servers.
-def load_config(config_file_path):
-    catalog_port=5000
-    order_port=5001
-    frontend_ports=5002
-    with open(config_file_path, "r") as f:
-        catalogServerIPs = f.readline().rstrip('\r\n').split(",")
-        orderServerIPs = f.readline().rstrip('\r\n').split(",")
-        frontendServerIPs = f.readline().rstrip('\r\n').split(",")
-    for i,catalog_server_ip in enumerate(catalogServerIPs):
-        Server.catalog_servers_urls.append(f"http://{catalog_server_ip}:{catalog_port+i*3}")
-    for i,order_server_ip in enumerate(orderServerIPs):
-        Server.order_servers_urls.append(f"http://{order_server_ip}:{order_port+i*3}")
 
 if __name__ == '__main__':
     load_config("config")
