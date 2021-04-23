@@ -23,7 +23,7 @@ def lookup(item_number: int):
     catalogServerURL = getCatalogServerURL()
 
     try:
-        url = f'http://{catalogServerURL}/books/{item_number}'
+        url = f'{catalogServerURL}/books/{item_number}'
         logging.debug(f"Trying to connect to {url}")
         r = requests.get(url)
     except requests.exceptions.RequestException as e:
@@ -53,7 +53,7 @@ def search():
 
     payload = {'topic': topic}
     try:
-        url = f'http://{catalogServerURL}/books'
+        url = f'{catalogServerURL}/books'
         logging.info(f"Trying to connect to {url}")
         r = requests.get(url, params=payload)
     except requests.exceptions.RequestException as e:
@@ -70,7 +70,7 @@ def buy(item_number: int):
     orderServerURL = getOrderServerURL()
 
     try:
-        url = f'http://{orderServerURL}/books/{item_number}'
+        url = f'{orderServerURL}/books/{item_number}'
         logging.info(f"Trying to connect to {url}")
         r = requests.post(url)
     except requests.exceptions.RequestException as e:
