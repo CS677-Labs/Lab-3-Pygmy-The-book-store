@@ -3,28 +3,24 @@ import logging
 import flask
 import requests
 from flask import jsonify, make_response
+from urllib.parse import urlparse
 import sys
 
 from orders_db import appendOrderDetailsToDb, insertRowToDB
 
 logging.basicConfig(filename='orders.log', level=logging.DEBUG)
 orderServer = flask.Flask(__name__)
-catalogServerIP = "127.0.0.1"
+catalogServerURL = "127.0.0.1"
 node_num = 0
 
 @orderServer.route('/books/<id>', methods=['POST'])
 def placeOrder(id):
     id = int(id)
-    
-    f = open("config", "r")
-    catalogServerIP = f.readline().rstrip('\r\n')
-    f.close()
-    
-    catalogServerURL = f"http://{catalogServerIP}:5000/"
+
     # Do a lookup for this id
     logging.info("Looking up {} on catalog server".format(id))
     try:
-        url=f"http://{catalogServerIP}:5000/books/{id}"
+        url=f"http://{catalogServerURL}/books/{id}"
         logging.info(f"Trying to connect to {url}")
         response = requests.get(url)
     except requests.exceptions.RequestException as e:
@@ -42,7 +38,7 @@ def placeOrder(id):
     
     # Reduce count for this id
     logging.info("Updating catalog server now")
-    response = requests.patch(url=catalogServerURL+"books/"+str(id), json={'count' : {'_operation' : 'decrement', 'value' : 1}})
+    response = requests.patch(url=f"http://{catalogServerURL}/books/{id}", json={'count' : {'_operation' : 'decrement', 'value' : 1}})
     if response.status_code == 400 :
         return make_response(jsonify({"Error" : f"No stock for Book with ID {id}"}), 400)
     else :
@@ -112,4 +108,6 @@ def load_config(config_file_path):
 if __name__ == '__main__':
     node_num = int(sys.argv[1])
     load_config("config")
-    orderServer.run(port=5001,debug=True)
+    o = urlparse(Server.order_servers_urls[node_num])
+    catalogServerURL = Server.catalog_servers_urls[node_num]
+    orderServer.run(port=o.port,debug=True)
