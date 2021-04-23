@@ -1,13 +1,17 @@
-import flask
 import logging
-import os
+
+import flask
 import requests
 from flask import request, jsonify, Response
+
 from load_balancer import getCatalogServerURL, getOrderServerURL
 
 logging.basicConfig(filename='frontend.log', level=logging.DEBUG)
 flask = flask.Flask(__name__)
 cache = {}
+from threading import Lock
+
+lock = Lock()
 
 
 @flask.route('/books/<int:item_number>', methods=['GET'])
@@ -32,7 +36,9 @@ def lookup(item_number: int):
             error_msg += " " + r.json()["message"]
         return error_msg, r.status_code
     book = r.json()
+    lock.acquire()
     cache[item_number] = book
+    lock.release()
     logging.info(f'Caching lookup results of {item_number}')
     return book
 
@@ -62,7 +68,6 @@ def search():
 
 @flask.route('/books/<int:item_number>', methods=['POST'])
 def buy(item_number: int):
-
     orderServerURL = getOrderServerURL()
 
     try:
@@ -81,13 +86,16 @@ def buy(item_number: int):
     book = r.json()
     return book
 
+
 @flask.route('/cache/<int:item_number>', methods=['DELETE'])
 def invalidate_cache(item_number: int):
     # Cache for the item_number to be invalidated here.
     logging.info(f'Invalidating cache for {item_number} if it exists')
+    lock.acquire()
     cache.pop(item_number, None)
-    
-    return
+    lock.release()
+    return Response(status=204)
+
 
 if __name__ == '__main__':
     flask.run(debug=True)

@@ -1,5 +1,7 @@
 import json
+import logging
 
+import requests
 from flask import request, jsonify, Response
 from sqlalchemy import exc
 
@@ -7,6 +9,12 @@ from models import Book, BookSchema, db, app
 
 book_schema = BookSchema()
 books_schema = BookSchema(many=True)
+logging.basicConfig(filename='catalog.log', level=logging.DEBUG)
+
+
+# fixme read from config?
+def getFrontEndServerURL():
+    return "http://localhost:5002/"
 
 
 # Endpoint to create a new book item
@@ -25,7 +33,7 @@ def add_book():
 @app.route("/books", methods=["GET"])
 def get_books():
     filtered_books = Book.query.with_entities(Book.id, Book.title).filter_by(topic=request.args.get('topic')).all()
-    return jsonify([(dict(row)) for row in filtered_books]) # fixme using dump and jsonify directly results in an error
+    return jsonify([(dict(row)) for row in filtered_books])  # fixme using dump and jsonify directly results in an error
 
 
 # Endpoint to get details of a book given the id
@@ -33,15 +41,16 @@ def get_books():
 def book_detail(id):
     book = Book.query.with_entities(Book.cost, Book.count).filter_by(id=id).first()
     if not book:
-        return Response(json.dumps({"message": f"Book with id {id} not found."}), status=404, mimetype='application/json')
-    return jsonify(dict(book)) # fixme using dump and jsonify directly results in an error
+        return Response(json.dumps({"message": f"Book with id {id} not found."}), status=404,
+                        mimetype='application/json')
+    return jsonify(dict(book))  # fixme using dump and jsonify directly results in an error
 
 
 # Endpoint to update details of a book
 @app.route("/books/<id>", methods=["PATCH"])
 def book_update(id):
     # Handling concurrent requests
-    book = db.session.query(Book).filter(Book.id==id).with_for_update().one()
+    book = db.session.query(Book).filter(Book.id == id).with_for_update().one()
     current_book_count = book.count
     book.topic = request.json.get('topic') or book.topic
     book.title = request.json.get('title') or book.title
@@ -58,8 +67,17 @@ def book_update(id):
     try:
         db.session.commit()
     except exc.IntegrityError:
-        return Response(json.dumps({"message": f"Current count = {current_book_count}. Cannot {request.json['count'].get('_operation')} by {request.json['count'].get('value')}."}), status=400,
+        return Response(json.dumps({
+                                       "message": f"Current count = {current_book_count}. Cannot {request.json['count'].get('_operation')} by {request.json['count'].get('value')}."}),
+                        status=400,
                         mimetype='application/json')
+
+    # Invalidate in memory cache entry for the given id (if any) in front end server
+    response = requests.delete(url=getFrontEndServerURL() + "cache/" + str(id))
+    if response.status_code != 204:
+        logging.error("Failed to invalidate frontend server's cache.")
+    else:
+        logging.info(f"Successfully invalidated frontend server's cache entry corresponding to ID {id}")
     return book_schema.jsonify(book)
 
 
@@ -68,12 +86,21 @@ def book_update(id):
 def book_delete(id):
     book = Book.query.get(id)
     if not book:
-        return Response(json.dumps({"message": f"Book with id {id} not found."}), status=404, mimetype='application/json')
+        return Response(json.dumps({"message": f"Book with id {id} not found."}), status=404,
+                        mimetype='application/json')
     try:
         db.session.delete(book)
         db.session.commit()
     except:
         return Response(json.dumps({"message": f"Failed to delete book."}), status=500, mimetype='application/json')
+
+    # Invalidate in memory cache entry for the given id (if any) in front end server
+    response = requests.delete(url=getFrontEndServerURL() + "cache/" + str(id))
+    if response.status_code != 204:
+        logging.error("Failed to invalidate frontend server's cache.")
+    else:
+        logging.info(f"Successfully invalidated frontend server's cache entry corresponding to ID {id}")
+
     return book_schema.jsonify(book)
 
 
