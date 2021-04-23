@@ -60,7 +60,7 @@ def placeOrder(id):
         for i, order_server_replica in enumerate(Server.order_servers_urls) :
             if i != node_num :
                 url = f"{order_server_replica}/orders"
-                print(url)
+                logging.info(f"Updating this new row on {order_server_replica}")
                 response = requests.post(url=url, json=dataToReturn)
                 if response.status_code != 200 :
                     logging.info(f"Failed to update order details to replica {order_server_replica}. Error - {response}")
@@ -92,16 +92,10 @@ def insertOrderDetails():
 
     return response
 
-
-
-
 class Server:
     catalog_servers_urls=[]
     order_servers_urls=[]
     frontend_servers_urls=[]
-
-
-
 
 # Function to read config file and populate info about diff catalog, order and frontend servers.
 def load_config(config_file_path):
@@ -123,4 +117,4 @@ if __name__ == '__main__':
     load_config("config")
     o = urlparse(Server.order_servers_urls[node_num])
     catalogServerURL = Server.catalog_servers_urls[node_num]
-    orderServer.run(port=o.port,debug=True)
+    orderServer.run(port=o.port, debug=True)

@@ -112,4 +112,4 @@ def load_config(config_file_path):
 
 if __name__ == '__main__':
     load_config("config")
-    flask.run(debug=True)
+    flask.run(port=5002,debug=True)
