@@ -78,12 +78,12 @@ def book_update(id):
         for i, catalog_server_replica in enumerate(Server.catalog_servers_urls) :
             if i != node_num :
                 url = f"{catalog_server_replica}/books/{id}"
-                logging.info(f"Forwarding request to {url}")
+                logging.info(f"Updating this write on replica {url}")
                 requestJson = request.json
                 requestJson['propagate'] = False
                 response = requests.patch(url=url, json=requestJson)
                 if response.status_code != 200 :
-                    logging.info(f"Failed to update order details to replica {catalog_server_replica}. Error - {response}")
+                    logging.info(f"Failed to update write on replica {catalog_server_replica}. Error - {response}")
 
         # Invalidate in memory cache entry for the given id (if any) in front end server
         response = requests.delete(url=getFrontEndServerURL() + "/cache/" + str(id))
