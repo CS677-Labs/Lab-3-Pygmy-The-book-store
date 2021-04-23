@@ -30,6 +30,8 @@ def create_connection():
     
     return conn
 
+
+
 def create_table(dbConnection) :
     create_table_sql = """ CREATE TABLE IF NOT EXISTS ORDERS (
         OrderId integer PRIMARY KEY,
@@ -47,6 +49,8 @@ def create_table(dbConnection) :
         return False
 
 
+
+# Function to create a new row in orders.db
 def appendOrderDetailsToDb(itemNum, orderStatus) :
     now = datetime.now()
     orderDate = now.strftime("%b-%d-%Y %H:%M:%S")
@@ -54,6 +58,32 @@ def appendOrderDetailsToDb(itemNum, orderStatus) :
 
     insert_sql = '''INSERT INTO ORDERS (OrderDate, ItemNum, OrderStatus)
                     VALUES(?,?,?);'''
+
+    dbConnection = create_connection()
+    with dbConnection :
+        if create_table(dbConnection) is True :
+            try :
+                cursor = dbConnection.cursor()
+                cursor.execute(insert_sql, columnValues)
+                dbConnection.commit()
+                logging.info("Inserted orderDate - {}, ItemNum - {}, orderStatus - {} to the DataBase".format(orderDate, itemNum, orderStatus))
+                return { "OrderId" : cursor.lastrowid, "Date" : orderDate, "ID" : itemNum, "Order status" : orderStatus} 
+            except Error as e :
+                logging.error("Unable to insert data to the Database. Error - " + str(e))
+                return None
+
+
+# Function to add new row to orders.db
+def insertRowToDB(orderDetails) :
+    orderId = orderDetails['OrderId']
+    orderDate = orderDetails['Date']
+    itemNum = orderDetails['ID']
+    orderStatus = orderDetails['Order status']
+    
+    columnValues = (orderId, orderDate, itemNum, orderStatus)
+
+    insert_sql = '''INSERT INTO ORDERS (OrderId, OrderDate, ItemNum, OrderStatus)
+                    VALUES(?,?,?,?);'''
 
     dbConnection = create_connection()
     with dbConnection :

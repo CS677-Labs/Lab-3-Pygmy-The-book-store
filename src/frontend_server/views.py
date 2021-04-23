@@ -3,8 +3,7 @@ import logging
 import flask
 import requests
 from flask import request, jsonify, Response
-
-from load_balancer import getCatalogServerURL, getOrderServerURL
+from load_balancer import getCatalogServerURL, getOrderServerURL, Server
 
 logging.basicConfig(filename='frontend.log', level=logging.DEBUG)
 flask = flask.Flask(__name__)
@@ -24,7 +23,7 @@ def lookup(item_number: int):
     catalogServerURL = getCatalogServerURL()
 
     try:
-        url = f'http://{catalogServerURL}/books/{item_number}'
+        url = f'{catalogServerURL}/books/{item_number}'
         logging.debug(f"Trying to connect to {url}")
         r = requests.get(url)
     except requests.exceptions.RequestException as e:
@@ -54,7 +53,7 @@ def search():
 
     payload = {'topic': topic}
     try:
-        url = f'http://{catalogServerURL}/books'
+        url = f'{catalogServerURL}/books'
         logging.info(f"Trying to connect to {url}")
         r = requests.get(url, params=payload)
     except requests.exceptions.RequestException as e:
@@ -71,7 +70,7 @@ def buy(item_number: int):
     orderServerURL = getOrderServerURL()
 
     try:
-        url = f'http://{orderServerURL}/books/{item_number}'
+        url = f'{orderServerURL}/books/{item_number}'
         logging.info(f"Trying to connect to {url}")
         r = requests.post(url)
     except requests.exceptions.RequestException as e:
@@ -97,5 +96,20 @@ def invalidate_cache(item_number: int):
     return Response(status=204)
 
 
+# Function to read config file and populate info about diff catalog, order and frontend servers.
+def load_config(config_file_path):
+    catalog_port=5000
+    order_port=5001
+    frontend_ports=5002
+    with open(config_file_path, "r") as f:
+        catalogServerIPs = f.readline().rstrip('\r\n').split(",")
+        orderServerIPs = f.readline().rstrip('\r\n').split(",")
+        frontendServerIPs = f.readline().rstrip('\r\n').split(",")
+    for i,catalog_server_ip in enumerate(catalogServerIPs):
+        Server.catalog_servers_urls.append(f"http://{catalog_server_ip}:{catalog_port+i*3}")
+    for i,order_server_ip in enumerate(orderServerIPs):
+        Server.order_servers_urls.append(f"http://{order_server_ip}:{order_port+i*3}")
+
 if __name__ == '__main__':
-    flask.run(debug=True)
+    load_config("config")
+    flask.run(port=5002,debug=True)

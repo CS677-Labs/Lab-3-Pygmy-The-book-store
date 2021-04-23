@@ -1,9 +1,10 @@
 import json
 import logging
-
+import sys
 import requests
 from flask import request, jsonify, Response
 from sqlalchemy import exc
+from urllib.parse import urlparse
 
 from models import Book, BookSchema, db, app
 
@@ -12,9 +13,8 @@ books_schema = BookSchema(many=True)
 logging.basicConfig(filename='catalog.log', level=logging.DEBUG)
 
 
-# fixme read from config?
 def getFrontEndServerURL():
-    return "http://localhost:5002/"
+    return Server.frontend_servers_urls[0]
 
 
 # Endpoint to create a new book item
@@ -55,6 +55,7 @@ def book_update(id):
     book.topic = request.json.get('topic') or book.topic
     book.title = request.json.get('title') or book.title
     book.cost = request.json.get('cost') if 'cost' in request.json else book.cost
+    propagateToReplica = bool(request.json.get('propagate')) if 'propagate' in request.json else True
 
     if request.json['count'].get('_operation'):
         if request.json['count'].get('_operation') == 'increment':
@@ -72,12 +73,25 @@ def book_update(id):
                         status=400,
                         mimetype='application/json')
 
-    # Invalidate in memory cache entry for the given id (if any) in front end server
-    response = requests.delete(url=getFrontEndServerURL() + "cache/" + str(id))
-    if response.status_code != 204:
-        logging.error("Failed to invalidate frontend server's cache.")
-    else:
-        logging.info(f"Successfully invalidated frontend server's cache entry corresponding to ID {id}")
+    # Propagate this info to other replicas
+    if propagateToReplica == True :
+        for i, catalog_server_replica in enumerate(Server.catalog_servers_urls) :
+            if i != node_num :
+                url = f"{catalog_server_replica}/books/{id}"
+                logging.info(f"Updating this write on replica {url}")
+                requestJson = request.json
+                requestJson['propagate'] = False
+                response = requests.patch(url=url, json=requestJson)
+                if response.status_code != 200 :
+                    logging.info(f"Failed to update write on replica {catalog_server_replica}. Error - {response}")
+
+        # Invalidate in memory cache entry for the given id (if any) in front end server
+        response = requests.delete(url=getFrontEndServerURL() + "/cache/" + str(id))
+        if response.status_code != 204:
+            logging.error("Failed to invalidate frontend server's cache.")
+        else:
+            logging.info(f"Successfully invalidated frontend server's cache entry corresponding to ID {id}")
+
     return book_schema.jsonify(book)
 
 
@@ -103,6 +117,31 @@ def book_delete(id):
 
     return book_schema.jsonify(book)
 
+class Server:
+    catalog_servers_urls=[]
+    order_servers_urls=[]
+    frontend_servers_urls=[]
+
+# Function to read config file and populate info about diff catalog, order and frontend servers.
+def load_config(config_file_path):
+    catalog_port=5000
+    order_port=5001
+    frontend_port=5002
+    with open(config_file_path, "r") as f:
+        catalogServerIPs = f.readline().rstrip('\r\n').split(",")
+        orderServerIPs = f.readline().rstrip('\r\n').split(",")
+        frontendServerIPs = f.readline().rstrip('\r\n').split(",")
+    for i,catalog_server_ip in enumerate(catalogServerIPs):
+        Server.catalog_servers_urls.append(f"http://{catalog_server_ip}:{catalog_port+i*3}")
+    for i,order_server_ip in enumerate(orderServerIPs):
+        Server.order_servers_urls.append(f"http://{order_server_ip}:{order_port+i*3}")
+    for i,frontend_server_ip in enumerate(frontendServerIPs):
+        Server.frontend_servers_urls.append(f"http://{frontend_server_ip}:{frontend_port+i*3}")
+    
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    node_num = int(sys.argv[1])
+    load_config("config")
+
+    o = urlparse(Server.catalog_servers_urls[node_num])
+    app.run(port=o.port, debug=True)

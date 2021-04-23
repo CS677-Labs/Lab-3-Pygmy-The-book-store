@@ -1,18 +1,24 @@
-# TODO - Read from config file and initialize these 2 arrays
-catalog_server_URLS = []
-order_server_URLS = []
+from threading import Lock
+lock = Lock()
 indexOfNextServer = 0
 
+class Server:
+    catalog_servers_urls=[]
+    order_servers_urls=[]
+    frontend_servers_urls=[]
 
-def getCatalogServerURL():
+def getCatalogServerURL() :
     global indexOfNextServer
-    catalog_server = catalog_server_URLS[indexOfNextServer]
-    indexOfNextServer = (indexOfNextServer + 1) % len(catalog_server_URLS)
+    global lock
+    with lock:
+        catalog_server = Server.catalog_servers_urls[indexOfNextServer]
+        indexOfNextServer = (indexOfNextServer + 1) % len(Server.catalog_servers_urls)
     return catalog_server
 
-
-def getOrderServerURL():
+def getOrderServerURL() :
     global indexOfNextServer
-    order_server = order_server_URLS[indexOfNextServer]
-    indexOfNextServer = (indexOfNextServer + 1) % len(order_server_URLS)
+    global lock
+    with lock:
+        order_server = Server.order_servers_urls[indexOfNextServer]
+        indexOfNextServer = (indexOfNextServer + 1) % len(Server.order_servers_urls)
     return order_server
