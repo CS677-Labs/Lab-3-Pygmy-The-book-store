@@ -3,12 +3,14 @@ import logging
 import flask
 import requests
 from flask import jsonify, make_response
+import sys
 
-from orders_db import appendOrderDetailsToDb
+from orders_db import appendOrderDetailsToDb, insertRowToDB
 
 logging.basicConfig(filename='orders.log', level=logging.DEBUG)
 orderServer = flask.Flask(__name__)
 catalogServerIP = "127.0.0.1"
+node_num = 0
 
 @orderServer.route('/books/<id>', methods=['POST'])
 def placeOrder(id):
@@ -57,9 +59,57 @@ def placeOrder(id):
             500,
         )
     else :
+        for i, order_server_replica in enumerate(Server.order_servers_urls) :
+            if i != node_num :
+                requests.post(url=order_server_replica+"/orders", json=dataToReturn)
+                if response.status_code != 200 :
+                    logging.info(f"Failed to update order details to replica {order_server_replica}. Error - {response}")
+        
         response = make_response (jsonify(dataToReturn),200)
 
     return response
 
+# End point used by order server to insert order details to other replicas.
+
+@orderServer.route('/orders', methods=['POST'])
+def insertOrderDetails():    
+    # Reduce count for this id
+    logging.info("Inserting new row to orders.db")
+
+    dataToReturn = insertRowToDB(request)
+    response = None
+    if dataToReturn is None :
+        response = make_response (
+            jsonify ( 
+                {"Error" : "Failed to update details of this order. Please try again"} 
+            ),
+            500,
+        )
+    else :
+        response = make_response (jsonify(dataToReturn),200)
+
+    return response
+
+
+class Server:
+    catalog_servers_urls=[]
+    order_servers_urls=[]
+    frontend_servers_urls=[]
+
+def load_config(config_file_path):
+    catalog_port=5000
+    order_port=5001
+    frontend_ports=5002
+    with open(config_file_path, "r") as f:
+        catalogServerIPs = f.readline().rstrip('\r\n').split(",")
+        orderServerIPs = f.readline().rstrip('\r\n').split(",")
+        frontendServerIPs = f.readline().rstrip('\r\n').split(",")
+    for i,catalog_server_ip in enumerate(catalogServerIPs):
+        Server.catalog_servers_urls.append(f"{catalog_server_ip}:{catalog_port+i*3}")
+    for i,order_server_ip in enumerate(orderServerIPs):
+        Server.order_servers_urls.append(f"{order_server_ip}:{order_port+i*3}")
+
 if __name__ == '__main__':
+    node_num = int(sys.argv[1])
+    load_config("config")
     orderServer.run(port=5001,debug=True)
