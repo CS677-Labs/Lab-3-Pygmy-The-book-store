@@ -50,7 +50,7 @@ def create_table(dbConnection) :
 
 
 
-
+# Function to create a new row in orders.db
 def appendOrderDetailsToDb(itemNum, orderStatus) :
     now = datetime.now()
     orderDate = now.strftime("%b-%d-%Y %H:%M:%S")
@@ -73,17 +73,17 @@ def appendOrderDetailsToDb(itemNum, orderStatus) :
                 return None
 
 
-
+# Function to add new row to orders.db
 def insertRowToDB(orderDetails) :
-    orderId = orderDetails.json['OrderId']
-    orderDate = orderDetails.json['Date']
-    itemNum = orderDetails.json['ID']
-    orderStatus = orderDetails.json['Order status']
+    orderId = orderDetails['OrderId']
+    orderDate = orderDetails['Date']
+    itemNum = orderDetails['ID']
+    orderStatus = orderDetails['Order status']
     
     columnValues = (orderId, orderDate, itemNum, orderStatus)
 
     insert_sql = '''INSERT INTO ORDERS (OrderId, OrderDate, ItemNum, OrderStatus)
-                    VALUES(?,?,?);'''
+                    VALUES(?,?,?,?);'''
 
     dbConnection = create_connection()
     with dbConnection :

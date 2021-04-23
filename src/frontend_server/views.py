@@ -111,10 +111,4 @@ def load_config(config_file_path):
 
 if __name__ == '__main__':
     load_config("config")
-    print(f"{getCatalogServerURL()}")
-    print(f"{getOrderServerURL()}")
-    print(f"{getCatalogServerURL()}")
-    print(f"{getCatalogServerURL()}")
-    print(f"{getOrderServerURL()}")
-    print(f"{getCatalogServerURL()}")
     flask.run(debug=True)
