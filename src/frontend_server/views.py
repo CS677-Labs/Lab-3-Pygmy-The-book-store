@@ -3,7 +3,7 @@ import logging
 import flask
 import requests
 from flask import request, jsonify, Response
-from load_balancer import getCatalogServerURL, getOrderServerURL,  Server
+from load_balancer import getCatalogServerURL, getOrderServerURL, Server
 
 logging.basicConfig(filename='frontend.log', level=logging.DEBUG)
 flask = flask.Flask(__name__)
@@ -96,6 +96,7 @@ def invalidate_cache(item_number: int):
     return Response(status=204)
 
 
+# Function to read config file and populate info about diff catalog, order and frontend servers.
 def load_config(config_file_path):
     catalog_port=5000
     order_port=5001
@@ -105,9 +106,9 @@ def load_config(config_file_path):
         orderServerIPs = f.readline().rstrip('\r\n').split(",")
         frontendServerIPs = f.readline().rstrip('\r\n').split(",")
     for i,catalog_server_ip in enumerate(catalogServerIPs):
-        Server.catalog_servers_urls.append(f"{catalog_server_ip}:{catalog_port+i*3}")
+        Server.catalog_servers_urls.append(f"http://{catalog_server_ip}:{catalog_port+i*3}")
     for i,order_server_ip in enumerate(orderServerIPs):
-        Server.order_servers_urls.append(f"{order_server_ip}:{order_port+i*3}")
+        Server.order_servers_urls.append(f"http://{order_server_ip}:{order_port+i*3}")
 
 if __name__ == '__main__':
     load_config("config")

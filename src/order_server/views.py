@@ -45,6 +45,7 @@ def placeOrder(id):
         if response.status_code != 200 :
             return response
 
+    # Create a new row in orders.db
     dataToReturn = appendOrderDetailsToDb(id, "Success")
     response = None
     if dataToReturn is None :
@@ -55,6 +56,7 @@ def placeOrder(id):
             500,
         )
     else :
+        # Now push this new row to other replicas.
         for i, order_server_replica in enumerate(Server.order_servers_urls) :
             if i != node_num :
                 url = f"{order_server_replica}/orders"
@@ -73,7 +75,7 @@ def placeOrder(id):
 # End point used by order server to insert order details to other replicas.
 @orderServer.route('/orders', methods=['POST'])
 def insertOrderDetails():    
-    # Reduce count for this id
+    
     logging.info("Inserting new row to orders.db")
 
     dataToReturn = insertRowToDB(request.json)
