@@ -25,7 +25,6 @@ def load_config(config_file_path):
     for i,order_server_ip in enumerate(orderServerIPs):
         Server.order_servers_urls.append(f"http://{order_server_ip}:{order_port+i*3}")
     
-
 load_config("config")
 
 @flask.route('/books/<int:item_number>', methods=['GET'])

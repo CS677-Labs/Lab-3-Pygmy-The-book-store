@@ -5,13 +5,33 @@ import requests
 from flask import request, jsonify, Response
 from sqlalchemy import exc
 from urllib.parse import urlparse
-
+import click
 from models import Book, BookSchema, db, app
 
 book_schema = BookSchema()
 books_schema = BookSchema(many=True)
 logging.basicConfig(filename='catalog.log', level=logging.DEBUG)
 
+class Server:
+    catalog_servers_urls=[]
+    order_servers_urls=[]
+    frontend_servers_urls=[]
+
+# Function to read config file and populate info about diff catalog, order and frontend servers.
+def load_config(config_file_path):
+    catalog_port=5000
+    order_port=5001
+    frontend_port=5002
+    with open(config_file_path, "r") as f:
+        catalogServerIPs = f.readline().rstrip('\r\n').split(",")
+        orderServerIPs = f.readline().rstrip('\r\n').split(",")
+        frontendServerIPs = f.readline().rstrip('\r\n').split(",")
+    for i,catalog_server_ip in enumerate(catalogServerIPs):
+        Server.catalog_servers_urls.append(f"http://{catalog_server_ip}:{catalog_port+i*3}")
+    for i,order_server_ip in enumerate(orderServerIPs):
+        Server.order_servers_urls.append(f"http://{order_server_ip}:{order_port+i*3}")
+    for i,frontend_server_ip in enumerate(frontendServerIPs):
+        Server.frontend_servers_urls.append(f"http://{frontend_server_ip}:{frontend_port+i*3}")
 
 def getFrontEndServerURL():
     return Server.frontend_servers_urls[0]
@@ -116,36 +136,11 @@ def book_delete(id):
         logging.info(f"Successfully invalidated frontend server's cache entry corresponding to ID {id}")
 
     return book_schema.jsonify(book)
-<<<<<<< HEAD
 
-class Server:
-    catalog_servers_urls=[]
-    order_servers_urls=[]
-    frontend_servers_urls=[]
-
-# Function to read config file and populate info about diff catalog, order and frontend servers.
-def load_config(config_file_path):
-    catalog_port=5000
-    order_port=5001
-    frontend_port=5002
-    with open(config_file_path, "r") as f:
-        catalogServerIPs = f.readline().rstrip('\r\n').split(",")
-        orderServerIPs = f.readline().rstrip('\r\n').split(",")
-        frontendServerIPs = f.readline().rstrip('\r\n').split(",")
-    for i,catalog_server_ip in enumerate(catalogServerIPs):
-        Server.catalog_servers_urls.append(f"http://{catalog_server_ip}:{catalog_port+i*3}")
-    for i,order_server_ip in enumerate(orderServerIPs):
-        Server.order_servers_urls.append(f"http://{order_server_ip}:{order_port+i*3}")
-    for i,frontend_server_ip in enumerate(frontendServerIPs):
-        Server.frontend_servers_urls.append(f"http://{frontend_server_ip}:{frontend_port+i*3}")
-    
 
 if __name__ == '__main__':
+    global node_num
     node_num = int(sys.argv[1])
     load_config("config")
-
     o = urlparse(Server.catalog_servers_urls[node_num])
-    app.run(port=o.port, debug=True)
-=======
-    
->>>>>>> Fixed bugs
+    app.run("0.0.0.0", port=o.port, debug=True)
