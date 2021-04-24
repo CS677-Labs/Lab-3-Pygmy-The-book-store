@@ -15,7 +15,7 @@ function finish {
     ips=(${machines[i]//,/ })
     for j in ${!ips[@]}; do
       ip=${ips[j]}  
-      if [[ "$ip" != *"host.docker.internal" ]]
+      if [[ "$ip" != *"host.docker.internal"* ]]
       then
         echo "Attempting to cleanup remote server $ip"
         ssh -n ec2-user@"$ip" "docker stop $(docker ps -aq) && docker rm $(docker ps -aq)" || echo "Failed to stop the server $i. It might have already been cleaned before or something went wrong."
@@ -56,7 +56,7 @@ for i in ${!servers[@]}; do
     port=$((port_offset+j*3))
     ip=${ips[j]}
     container_name=${role}_$j
-    if [[ "$ip" == *"host.docker.internal" ]]
+    if [[ "$ip" == *"host.docker.internal"* ]]
     then
       echo "Running $role on Localhost...."
       docker load < docker/${role}.tar.gz
@@ -95,7 +95,7 @@ for i in ${!servers[@]}; do
   done
 done
 
-if [[ "$ip" == *"host.docker.internal" ]]
+if [[ "$ip" == *"host.docker.internal"* ]]
 then
   echo "Frontend server is running on http://localhost:$frontend_port .... Pass this to the CLI to use it with this server."
 else
