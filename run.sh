@@ -64,9 +64,21 @@ for i in ${!servers[@]}; do
       if [[ "$role" == "frontend_server" ]]
       then
         frontend_port=$port
-        docker run -v $(pwd)/$configFile:/app/config -d -p $port:$port --name $container_name $role --host=0.0.0.0 --port $port
+
+        if [[ "$OSTYPE" == "msys" ]]
+        then
+          docker run -v $(pwd -W)/$configFile:/app/config -d -p $port:$port --name $container_name $role --host=0.0.0.0 --port $port
+        else
+          docker run -v $(pwd)/$configFile:/app/config -d -p $port:$port --name $container_name $role --host=0.0.0.0 --port $port
+        fi
+
       else
-        docker run -v $(pwd)/$configFile:/app/config -d -p $port:$port --name $container_name $role $j
+        if [[ "$OSTYPE" == "msys" ]]
+        then
+          docker run -v $(pwd -W)/$configFile:/app/config -d -p $port:$port --name $container_name $role $j
+        else
+          docker run -v $(pwd)/$configFile:/app/config -d -p $port:$port --name $container_name $role $j
+        fi
       fi
       sleep 3
       status=0
