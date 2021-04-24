@@ -109,7 +109,7 @@ done
 
 if [[ "$ip" == *"host.docker.internal"* ]] || [[ "$ip" == *"localhost"* ]]
 then
-  echo "Frontend server is running on http://localhost:$frontend_port .... Pass this to the CLI to use it with this server."
+  echo "Frontend server is running on localhost .... Pass this to the CLI to use it with this server."
 else
   echo "Frontend server is running on ${machines[2]}.... Pass this to the CLI to use it with this server."
 fi
