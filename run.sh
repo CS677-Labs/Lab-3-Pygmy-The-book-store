@@ -34,8 +34,13 @@ local_container_names=()
 container_names=()
  if [[ "$1" == "" ]]
  then
-  echo "No file passed as parameter. Using the default localhost file \"machines.txt.local\"."
-  configFile="machines.txt.local"
+  if [[ "$OSTYPE" == *"linux"* ]]
+  then
+    configFile="machines.txt.local.linux"
+  else
+    configFile="machines.txt.local"
+  fi
+  echo "No file passed as parameter. Using the default localhost file $configFile."
  else
   configFile=$1
  fi
@@ -81,7 +86,6 @@ for i in ${!servers[@]}; do
       fi
       sleep 3
       status=0
-      echo $(docker ps | grep "$container_name" | grep -v grep)
       docker ps | grep "$container_name" | grep -v grep >/dev/null 2>&1 || status=$?
       local_container_names+=($container_name)
     else
