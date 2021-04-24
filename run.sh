@@ -72,16 +72,25 @@ for i in ${!servers[@]}; do
         if [[ "$OSTYPE" == "msys" ]]
         then
           docker run -v $(pwd -W)/$configFile:/app/config -d -p $port:$port --name $container_name $role --host=0.0.0.0 --port $port
-        else
-          docker run -v $(pwd)/$configFile:/app/config -d -p $port:$port --name $container_name --net=host $role --host=0.0.0.0 --port $port
+        else 
+          if [[ "$OSTYPE" != *"linux"* ]]
+          then
+            docker run -v $(pwd)/$configFile:/app/config -d -p $port:$port --name $container_name $role --host=0.0.0.0 --port $port
+          else
+            docker run -v $(pwd)/$configFile:/app/config -d -p $port:$port --name $container_name --net=host $role --host=0.0.0.0 --port $port
+          fi
         fi
-
       else
         if [[ "$OSTYPE" == "msys" ]]
         then
           docker run -v $(pwd -W)/$configFile:/app/config -d -p $port:$port --name $container_name $role $j
-        else
-          docker run -v $(pwd)/$configFile:/app/config -d -p $port:$port --name $container_name --net=host $role $j
+        else 
+          if [[ "$OSTYPE" != *"linux"* ]]
+          then
+            docker run -v $(pwd)/$configFile:/app/config -d -p $port:$port --name $container_name $role $j
+          else
+            docker run -v $(pwd)/$configFile:/app/config -d -p $port:$port --name $container_name --net=host $role $j
+          fi
         fi
       fi
       sleep 3
