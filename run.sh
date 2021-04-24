@@ -15,7 +15,7 @@ function finish {
     ips=(${machines[i]//,/ })
     for j in ${!ips[@]}; do
       ip=${ips[j]}  
-      if [[ "$ip" != *"host.docker.internal"* ]]
+      if [[ "$ip" != *"host.docker.internal"* ]] && [[ "$ip" != *"localhost"* ]]
       then
         echo "Attempting to cleanup remote server $ip"
         ssh -n ec2-user@"$ip" "docker stop $(docker ps -aq) && docker rm $(docker ps -aq)" || echo "Failed to stop the server $i. It might have already been cleaned before or something went wrong."
@@ -56,7 +56,7 @@ for i in ${!servers[@]}; do
     port=$((port_offset+j*3))
     ip=${ips[j]}
     container_name=${role}_$j
-    if [[ "$ip" == *"host.docker.internal"* ]]
+    if [[ "$ip" == *"host.docker.internal"* ]] || [[ "$ip" == *"localhost"* ]]
     then
       echo "Running $role on Localhost...."
       docker load < docker/${role}.tar.gz
@@ -64,12 +64,13 @@ for i in ${!servers[@]}; do
       if [[ "$role" == "frontend_server" ]]
       then
         frontend_port=$port
-        docker run -v $(pwd)/$configFile:/app/config -d -p $port:$port --name $container_name $role --host=0.0.0.0 --port $port
+        docker run -v $(pwd)/$configFile:/app/config -d -p $port:$port --name $container_name --net=host $role --host=0.0.0.0 --port $port
       else
-        docker run -v $(pwd)/$configFile:/app/config -d -p $port:$port --name $container_name $role $j
+        docker run -v $(pwd)/$configFile:/app/config -d -p $port:$port --name $container_name --net=host $role $j
       fi
       sleep 3
       status=0
+      echo $(docker ps | grep "$container_name" | grep -v grep)
       docker ps | grep "$container_name" | grep -v grep >/dev/null 2>&1 || status=$?
       local_container_names+=($container_name)
     else
@@ -95,7 +96,7 @@ for i in ${!servers[@]}; do
   done
 done
 
-if [[ "$ip" == *"host.docker.internal"* ]]
+if [[ "$ip" == *"host.docker.internal"* ]] || [[ "$ip" == *"localhost"* ]]
 then
   echo "Frontend server is running on http://localhost:$frontend_port .... Pass this to the CLI to use it with this server."
 else
