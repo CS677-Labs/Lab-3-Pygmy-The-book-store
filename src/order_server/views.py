@@ -2,19 +2,33 @@ import logging
 
 import flask
 import requests
-from flask import jsonify, make_response, request
+from flask import jsonify, make_response, request, Response
 from urllib.parse import urlparse
 import sys
 
-from orders_db import appendOrderDetailsToDb, insertRowToDB
+from orders_db import appendOrderDetailsToDb, insertRowToDB, getAllRowsFromDb, resync_database
+from enum import Enum
 
-logging.basicConfig(filename='orders.log', level=logging.DEBUG)
 
-orderServer = flask.Flask(__name__)
+
+class State(Enum) :
+    INIT = 0
+    RUNNING = 1
+
+
+
 class Server:
     catalog_servers_urls=[]
     order_servers_urls=[]
     frontend_servers_urls=[]
+
+
+
+logging.basicConfig(filename='orders.log', level=logging.DEBUG)
+orderServer = flask.Flask(__name__)
+
+
+
 # Function to read config file and populate info about diff catalog, order and frontend servers.
 def load_config(config_file_path):
     catalog_port=5000
@@ -31,6 +45,7 @@ def load_config(config_file_path):
 
 
 
+# End point for a buy request.
 @orderServer.route('/books/<id>', methods=['POST'])
 def placeOrder(id):
     id = int(id)
@@ -85,6 +100,9 @@ def placeOrder(id):
         
         response = make_response (jsonify(dataToReturn),200)
 
+    global node_state
+    node_state = State.RUNNING
+
     return response
 
 
@@ -107,15 +125,56 @@ def insertOrderDetails():
         )
     else :
         response = make_response (jsonify(dataToReturn),200)
-
+    
+    global node_state
+    node_state = State.RUNNING
+    
     return response
+
+
+
+# Endpoint to return all rows. Will be used for resync
+@orderServer.route("/table", methods=["GET"])
+def get_allRows():
+    global node_state
+    if node_state != State.INIT :
+        all_orders = getAllRowsFromDb()
+        return make_response(jsonify(all_orders), 200)
+    else :
+        # Since the server is in INIT state, no writes have been performed.
+        # No data to return.
+        return Response(status=204)
+
 
 
 if __name__ == '__main__':
     global node_num
     node_num = int(sys.argv[1])
+    global node_state
+    node_state = State.INIT
+
     load_config("config")
+    
+       # Try to connect with other replicas to ensure this one is in sync with the others.
+    for i, order_server_replica in enumerate(Server.order_servers_urls) :
+        if i != node_num :
+            url = f"{order_server_replica}/table"
+            logging.info(f"Trying to sync with replica with node num {node_num} - {order_server_replica}")
+            try :
+                response = requests.get(url=url)
+                if response.status_code == 204 :
+                    logging.info(f"Replica {node_num} - {order_server_replica} is also in INIT state. We are in sync")
+                    break
+
+                if response.status_code == 200 :
+                    logging.info(f"Replica {node_num} - {order_server_replica} is in RUNNING state. We will sync our DB with that of the replica")
+                    resync_database(response.json())
+                    break
+            except :
+                logging.info(f"Replica {node_num} - {order_server_replica} did not return valid status. It may not be up yet.")
+
     global catalogServerURL
     catalogServerURL = Server.catalog_servers_urls[node_num]
+    
     o = urlparse(Server.order_servers_urls[node_num])
     orderServer.run("0.0.0.0",port=o.port, debug=True)
