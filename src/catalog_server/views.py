@@ -8,6 +8,11 @@ from urllib.parse import urlparse
 import click
 from models import Book, BookSchema, db, app
 
+from enum import Enum
+class State(Enum) :
+    INIT = 0
+    RUNNING = 1
+
 book_schema = BookSchema()
 books_schema = BookSchema(many=True)
 logging.basicConfig(filename='catalog.log', level=logging.DEBUG)
@@ -46,6 +51,9 @@ def add_book():
         db.session.commit()
     except:
         return Response(json.dumps({"message": "Failed to add book."}), status=500, mimetype='application/json')
+    
+    global node_state
+    node_state = State.RUNNING
     return jsonify(book_schema.dump(new_book))
 
 
@@ -64,6 +72,19 @@ def book_detail(id):
         return Response(json.dumps({"message": f"Book with id {id} not found."}), status=404,
                         mimetype='application/json')
     return jsonify(dict(book))  # fixme using dump and jsonify directly results in an error
+
+
+# Endpoint to return all rows. Will be used for resync
+@app.route("/table", methods=["GET"])
+def get_allRows():
+    global node_state
+    if node_state != State.INIT :
+        all_books = Book.query.with_entities(Book.id, Book.title, Book.topic, Book.count, Book.cost).all()
+        return jsonify([(dict(row)) for row in all_books])
+    else :
+        # Since the server is in INIT state, no writes have been performed.
+        # No data to return.
+        return Response(status=204)
 
 
 # Endpoint to update details of a book
@@ -93,6 +114,9 @@ def book_update(id):
                         status=400,
                         mimetype='application/json')
 
+    global node_state
+    node_state = State.RUNNING
+
     # Propagate this info to other replicas
     if propagateToReplica == True :
         for i, catalog_server_replica in enumerate(Server.catalog_servers_urls) :
@@ -101,9 +125,12 @@ def book_update(id):
                 logging.info(f"Updating this write on replica {url}")
                 requestJson = request.json
                 requestJson['propagate'] = False
-                response = requests.patch(url=url, json=requestJson)
-                if response.status_code != 200 :
-                    logging.info(f"Failed to update write on replica {catalog_server_replica}. Error - {response}")
+                try :
+                    response = requests.patch(url=url, json=requestJson)
+                    if response.status_code != 200 :
+                        logging.info(f"Failed to update write on replica {catalog_server_replica}. Error - {response}")
+                except :
+                    logging.info(f"Failed to update write on replica {catalog_server_replica}. Exception occured.")
 
         # Invalidate in memory cache entry for the given id (if any) in front end server
         response = requests.delete(url=getFrontEndServerURL() + "/cache/" + str(id))
@@ -111,7 +138,7 @@ def book_update(id):
             logging.error("Failed to invalidate frontend server's cache.")
         else:
             logging.info(f"Successfully invalidated frontend server's cache entry corresponding to ID {id}")
-
+        
     return book_schema.jsonify(book)
 
 
@@ -135,12 +162,50 @@ def book_delete(id):
     else:
         logging.info(f"Successfully invalidated frontend server's cache entry corresponding to ID {id}")
 
+    global node_state
+    node_state = State.RUNNING
+
     return book_schema.jsonify(book)
+
+# Function to resync this DB with info returned from another replica.
+def resync_database(data) :
+    rows = []
+    for row in data :
+        rows.append(Book(row["title"], row["topic"], row["count"], row["cost"], row["id"]))
+
+    try :
+        db.session.query(Book).delete()
+        db.session.bulk_save_objects(rows)
+        db.session.commit()
+    except :
+        logging.error(f"Failed to resync the database.")
 
 
 if __name__ == '__main__':
     global node_num
     node_num = int(sys.argv[1])
+    global node_state
+    node_state = State.INIT
     load_config("config")
+    
+    # Try to connect with other replicas to ensure this one is in sync with the others.
+    for i, catalog_server_replica in enumerate(Server.catalog_servers_urls) :
+        if i != node_num :
+            url = f"{catalog_server_replica}/table"
+            logging.info(f"Trying to sync with replica with node num {node_num} - {catalog_server_replica}")
+            try :
+                response = requests.get(url=url)
+                if response.status_code == 204 :
+                    logging.info(f"Replica {node_num} - {catalog_server_replica} is also in INIT state. We are in sync")
+                    break
+
+                if response.status_code == 200 :
+                    logging.info(f"Replica {node_num} - {catalog_server_replica} is also in RUNNING state. We will sync our DB with that of the replica")
+                    resync_database(response.json)
+                    break
+            except :
+                logging.info(f"Replica {node_num} - {catalog_server_replica} did not return valid status. It may not be up yet.")
+        
+    
     o = urlparse(Server.catalog_servers_urls[node_num])
     app.run("0.0.0.0", port=o.port, debug=True)
