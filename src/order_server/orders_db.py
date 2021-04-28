@@ -4,7 +4,7 @@ from datetime import datetime
 import logging
 import os
 
-logging.basicConfig(filename='Orders.log', level=logging.DEBUG)
+logging.basicConfig(filename='orders.log', level=logging.DEBUG)
 
 
 def log_query(query):
@@ -97,3 +97,39 @@ def insertRowToDB(orderDetails) :
             except Error as e :
                 logging.error("Unable to insert data to the Database. Error - " + str(e))
                 return None
+
+
+
+# Function to fetch all rows from orders.db
+def getAllRowsFromDb() :
+    select_sql = '''SELECT OrderID as OrderId, OrderDate, ItemNum, OrderStatus FROM ORDERS;'''
+    dbConnection = create_connection()
+    with dbConnection :
+        try :
+            cursor = dbConnection.cursor()
+            cursor.execute(select_sql)
+            rows = cursor.fetchall()
+            return rows
+        except Error as e :
+            logging.error("Unable to insert data to the Database. Error - " + str(e))
+            return None
+
+
+def resync_database(data) :
+    columnValues = data
+    insert_sql = '''INSERT INTO ORDERS (OrderId, OrderDate, ItemNum, OrderStatus)
+                    VALUES(?,?,?,?);'''
+
+    dbConnection = create_connection()
+    with dbConnection :
+        if create_table(dbConnection) is True :
+            try :
+                cursor = dbConnection.cursor()
+                cursor.executemany(insert_sql, columnValues)
+                dbConnection.commit()
+                logging.info(f"Inserted {len(columnValues)} rows into orders.db")
+                return 
+            except Error as e :
+                logging.error("Unable to insert data to the Database. Error - " + str(e))
+                return
+    return
