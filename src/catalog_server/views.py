@@ -41,6 +41,9 @@ def load_config(config_file_path):
 def getFrontEndServerURL():
     return Server.frontend_servers_urls[0]
 
+@app.route("/health")
+def health():
+    return json.dumps({"message":"Healthy"})
 
 # Endpoint to create a new book item
 @app.route("/books", methods=["POST"])
@@ -130,7 +133,7 @@ def book_update(id):
                     if response.status_code != 200 :
                         logging.info(f"Failed to update write on replica {catalog_server_replica}. Error - {response}")
                 except :
-                    logging.info(f"Failed to update write on replica {catalog_server_replica}. Exception occured.")
+                    logging.info(f"Failed to update write on replica {catalog_server_replica}. Exception occured. It's probably down")
 
         # Invalidate in memory cache entry for the given id (if any) in front end server
         response = requests.delete(url=getFrontEndServerURL() + "/cache/" + str(id))
@@ -172,7 +175,6 @@ def resync_database(data) :
     rows = []
     for row in data :
         rows.append(Book(row["title"], row["topic"], row["count"], row["cost"], row["id"]))
-
     try :
         db.session.query(Book).delete()
         db.session.bulk_save_objects(rows)
@@ -195,12 +197,12 @@ if __name__ == '__main__':
             logging.info(f"Trying to sync with replica with node num {node_num} - {catalog_server_replica}")
             try :
                 response = requests.get(url=url)
-                if response.status_code == 204 :
+                if response.status_code == 204:
                     logging.info(f"Replica {node_num} - {catalog_server_replica} is also in INIT state. We are in sync")
                     break
 
-                if response.status_code == 200 :
-                    logging.info(f"Replica {node_num} - {catalog_server_replica} is also in RUNNING state. We will sync our DB with that of the replica")
+                if response.status_code == 200:
+                    logging.info(f"Replica {node_num} - {catalog_server_replica} is in RUNNING state. We will sync our DB with that of the replica")
                     resync_database(response.json)
                     break
             except :

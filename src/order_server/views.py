@@ -1,5 +1,5 @@
 import logging
-
+import json
 import flask
 import requests
 from flask import jsonify, make_response, request, Response
@@ -43,7 +43,9 @@ def load_config(config_file_path):
     for i,order_server_ip in enumerate(orderServerIPs):
         Server.order_servers_urls.append(f"http://{order_server_ip}:{order_port+i*3}")
 
-
+@orderServer.route("/health")
+def health():
+    return json.dumps({"message":"Healthy"})
 
 # End point for a buy request.
 @orderServer.route('/books/<id>', methods=['POST'])
@@ -111,7 +113,6 @@ def placeOrder(id):
 # End point used by order server to insert order details to other replicas.
 @orderServer.route('/orders', methods=['POST'])
 def insertOrderDetails():    
-    
     logging.info("Inserting new row to orders.db")
 
     dataToReturn = insertRowToDB(request.json)
