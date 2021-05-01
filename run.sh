@@ -18,7 +18,7 @@ function finish {
       if [[ "$ip" != *"host.docker.internal"* ]] && [[ "$ip" != *"localhost"* ]]
       then
         echo "Attempting to cleanup remote server $ip"
-        ssh -n ec2-user@"$ip" "docker stop $(docker ps -aq) && docker rm $(docker ps -aq)" || echo "Failed to stop the server $i. It might have already been cleaned before or something went wrong."
+        ssh -n ec2-user@"$ip" 'docker stop $(docker ps -aq) && docker rm $(docker ps -aq)' || echo "Failed to stop the server $i. It might have already been cleaned before or something went wrong."
       fi
     done
   done
@@ -104,9 +104,9 @@ for i in ${!servers[@]}; do
       scp $configFile  ec2-user@"$ip":"temp_$i/Lab-3-Pygmy-The-book-store/config"
       if [[ "$role" == "frontend_server" ]]
       then
-          ssh -n ec2-user@$ip "cd temp_$i/Lab-3-Pygmy-The-book-store && docker load < docker/${role}.tar.gz && docker run -v $(pwd)/config:/app/config -d -p $port:$port --name $container_name $role --host=0.0.0.0 --port $port"
-      else
-          ssh -n ec2-user@$ip "cd temp_$i/Lab-3-Pygmy-The-book-store && docker load < docker/${role}.tar.gz && docker run -v $(pwd)/config:/app/config -d -p $port:$port --name $container_name $role $j"
+	      ssh -n ec2-user@$ip "cd temp_$i/Lab-3-Pygmy-The-book-store && docker load < docker/${role}.tar.gz && docker run -v \$(pwd)/config:/app/config -d -p $port:$port --name $container_name $role --host=0.0.0.0 --port $port"
+     else
+	      ssh -n ec2-user@$ip "cd temp_$i/Lab-3-Pygmy-The-book-store && docker load < docker/${role}.tar.gz && docker run -v \$(pwd)/config:/app/config -d -p $port:$port --name $container_name $role $j"
       fi
       sleep 3
       status=0
