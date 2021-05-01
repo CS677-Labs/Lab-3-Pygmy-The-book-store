@@ -10,6 +10,7 @@ import atexit
 from apscheduler.schedulers.background import BackgroundScheduler
 from threading import Lock
 
+#logging.basicConfig(filename='frontend.log', level=logging.DEBUG)
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.FileHandler("frontend.log"))
@@ -68,7 +69,7 @@ def lookup(item_number: int):
             r = requests.get(url)
             break
         except requests.exceptions.RequestException as e:
-            logger.error(f"Exception occured. {e}")
+            logger.error(f"Exception occured. {e}. The catalog server with ip {catalogServerURL} seems to be down. Will retry the request with the other catalog servers.")
             if i == 0:
                 check_servers()
                 continue
@@ -102,7 +103,7 @@ def search():
             r = requests.get(url, params=payload)
             break
         except requests.exceptions.RequestException as e:
-            logger.error(f"Exception occured. {e}")
+            logger.error(f"Exception occured. {e}. The catalog server with ip {catalogServerURL} seems to be down. Will retry the request with the other catalog servers.")
             if i == 0:
                 check_servers()
                 continue
@@ -121,19 +122,24 @@ def buy(item_number: int):
             url = f'{orderServerURL}/books/{item_number}'
             logger.info(f"Trying to connect to {url}")
             r = requests.post(url)
-            break
         except requests.exceptions.RequestException as e:
-            logger.error(f"Exception occured. {e}")
+            logger.error(f"Exception occured. {e}. The order server with ip {orderServerURL} seems to be down. Will retry the request with the other order servers.")
             if i == 0:
                 check_servers()
                 continue
             return f"Ughh! Order server seems to be down. Failed to buy the book with item number {item_number}.", 501
 
-    if r.status_code != 200:
-        error_msg = f"Failed to buy the book with item number {item_number}."
-        if "Error" in r.json():
-            error_msg += " " + r.json()["Error"]
-        return error_msg, r.status_code
+        if r.status_code != 200:
+            logger.error(f"The order server did not return 200 status code. The order server with ip {orderServerURL} seems to be down. Will retry the request with the other order servers.")
+
+            if i == 0:
+                check_servers()
+                continue
+            error_msg = f"Failed to buy the book with item number {item_number}."
+            if "Error" in r.json():
+                error_msg += " " + r.json()["Error"]
+            return error_msg, r.status_code
+        break
     book = r.json()
     return book
 

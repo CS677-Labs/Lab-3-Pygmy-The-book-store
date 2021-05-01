@@ -96,7 +96,11 @@ def placeOrder(id):
             if i != node_num :
                 url = f"{order_server_replica}/orders"
                 logging.info(f"Updating this new row on {order_server_replica}")
-                response = requests.post(url=url, json=dataToReturn)
+                try:
+                    response = requests.post(url=url, json=dataToReturn)
+                except:
+                    logging.info(f"Failed to update order details to replica {order_server_replica}. Error - {response}")
+                    continue
                 if response.status_code != 200 :
                     logging.info(f"Failed to update order details to replica {order_server_replica}. Error - {response}")
         

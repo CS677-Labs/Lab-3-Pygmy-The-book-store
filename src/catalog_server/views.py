@@ -133,7 +133,7 @@ def book_update(id):
                     if response.status_code != 200 :
                         logging.info(f"Failed to update write on replica {catalog_server_replica}. Error - {response}")
                 except :
-                    logging.info(f"Failed to update write on replica {catalog_server_replica}. Exception occured. It's probably down")
+                    logging.info(f"Failed to update write on replica {catalog_server_replica}. Exception occured.")
 
         # Invalidate in memory cache entry for the given id (if any) in front end server
         response = requests.delete(url=getFrontEndServerURL() + "/cache/" + str(id))
@@ -194,7 +194,7 @@ if __name__ == '__main__':
     for i, catalog_server_replica in enumerate(Server.catalog_servers_urls) :
         if i != node_num :
             url = f"{catalog_server_replica}/table"
-            logging.info(f"Trying to sync with replica with node num {node_num} - {catalog_server_replica}")
+            logging.info(f"Trying to sync with replica with node num {i} - {catalog_server_replica}")
             try :
                 response = requests.get(url=url)
                 if response.status_code == 204:
@@ -203,10 +203,10 @@ if __name__ == '__main__':
 
                 if response.status_code == 200:
                     logging.info(f"Replica {node_num} - {catalog_server_replica} is in RUNNING state. We will sync our DB with that of the replica")
-                    resync_database(response.json)
+                    resync_database(response.json())
                     break
-            except :
-                logging.info(f"Replica {node_num} - {catalog_server_replica} did not return valid status. It may not be up yet.")
+            except Exception as e:
+                logging.info(f"Exception: {e}. Replica {i} - {catalog_server_replica} did not return valid status. It may not be up yet.")
         
     
     o = urlparse(Server.catalog_servers_urls[node_num])
