@@ -18,8 +18,8 @@ bash run.sh
 ## To run the system on AWS EC2 instances
 Create a config file. This file should have 3 lines.
 
-1st line will contain comma separated list of servers where catalog server replicas should run.
-2nd line will contain comma separated list of servers where order server replicas should run.
+1st line will contain comma separated list of DNS name/IP of servers where catalog server replicas should run.
+2nd line will contain comma separated list of DNS name/IP of servers where order server replicas should run.
 3rd line will contain DNS name/IP of server where frontend server should run.
 
 Example :
