@@ -1,5 +1,5 @@
 import logging
-
+import json
 import flask
 import requests
 from flask import jsonify, make_response, request, Response
@@ -43,7 +43,9 @@ def load_config(config_file_path):
     for i,order_server_ip in enumerate(orderServerIPs):
         Server.order_servers_urls.append(f"http://{order_server_ip}:{order_port+i*3}")
 
-
+@orderServer.route("/health")
+def health():
+    return json.dumps({"message":"Healthy"})
 
 # End point for a buy request.
 @orderServer.route('/books/<id>', methods=['POST'])
@@ -94,7 +96,11 @@ def placeOrder(id):
             if i != node_num :
                 url = f"{order_server_replica}/orders"
                 logging.info(f"Updating this new row on {order_server_replica}")
-                response = requests.post(url=url, json=dataToReturn)
+                try:
+                    response = requests.post(url=url, json=dataToReturn)
+                except:
+                    logging.info(f"Failed to update order details to replica {order_server_replica}. Error - {response}")
+                    continue
                 if response.status_code != 200 :
                     logging.info(f"Failed to update order details to replica {order_server_replica}. Error - {response}")
         
@@ -111,7 +117,6 @@ def placeOrder(id):
 # End point used by order server to insert order details to other replicas.
 @orderServer.route('/orders', methods=['POST'])
 def insertOrderDetails():    
-    
     logging.info("Inserting new row to orders.db")
 
     dataToReturn = insertRowToDB(request.json)
