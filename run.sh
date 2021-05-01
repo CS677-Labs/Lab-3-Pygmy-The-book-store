@@ -101,12 +101,12 @@ for i in ${!servers[@]}; do
       echo "Running role $role on remote machine $ip."
       dir[$i]="temp_$i"
       ssh -n ec2-user@"$ip" "rm -rf temp_$i && mkdir temp_$i && cd temp_$i && git clone https://github.com/CS677-Labs/Lab-3-Pygmy-The-book-store 1>/dev/null 2>&1  || echo \"Repo already present\""
-      scp $configFile  ec2-user@"$ip":"temp_$i/Lab-3-Pygmy-The-book-store/src/$role/config" >/dev/null 2>&1
+      scp $configFile  ec2-user@"$ip":"temp_$i/Lab-3-Pygmy-The-book-store/src/$role/config"
       if [[ "$role" == "frontend_server" ]]
       then
-          ssh -n ec2-user@$ip "cd temp_$i/Lab-3-Pygmy-The-book-store && docker load docker/${role}.tar.gz && docker cp -f $configFile ${role}:/config && (docker run -v $(pwd)/$configFile:/app/config -d -p $port:$port --name $container_name $role --host=0.0.0.0 --port $port"
+          ssh -n ec2-user@$ip "cd temp_$i/Lab-3-Pygmy-The-book-store && docker load docker/${role}.tar.gz && docker cp -f $configFile ${role}:/config && docker run -v $(pwd)/$configFile:/app/config -d -p $port:$port --name $container_name $role --host=0.0.0.0 --port $port"
       else
-          ssh -n ec2-user@$ip "cd temp_$i/Lab-3-Pygmy-The-book-store && docker load docker/${role}.tar.gz && docker cp -f $configFile ${role}:/config && (docker run -v $(pwd)/$configFile:/app/config -d -p $port:$port --name $container_name $role $j"
+          ssh -n ec2-user@$ip "cd temp_$i/Lab-3-Pygmy-The-book-store && docker load docker/${role}.tar.gz && docker cp -f $configFile ${role}:/config && docker run -v $(pwd)/$configFile:/app/config -d -p $port:$port --name $container_name $role $j"
       fi
       sleep 3
       status=0
